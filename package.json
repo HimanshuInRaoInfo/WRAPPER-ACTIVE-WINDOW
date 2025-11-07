@@ -9,10 +9,5 @@
     "postinstall": "node build-dotnet.js"
   },
   "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "active-win": "^8.2.1",
-    "archiver": "^7.0.1",
-    "better-sqlite3": "^11.10.0"
-  }
+  "license": "ISC"
 }
