@@ -21,13 +21,8 @@ const checkIsExeAvailable = () => {
 const getActiveWindow = async () => {
     const get_active_win = new GetActiveWindow();
     const result = await get_active_win.getCurrentActiveWindow();
-    console.log(result, "\n\n")
     return result;
 }
-
-setInterval(() => {
-    getActiveWindow();
-}, 10000);
 
 module.exports = {
     checkIsExeAvailable,
