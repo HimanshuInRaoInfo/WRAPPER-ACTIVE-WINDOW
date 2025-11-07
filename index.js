@@ -7,10 +7,6 @@ const checkIsExeAvailable = () => {
     const source_exe_dest = path.join(source_fold_dest, "GetBrowserUrlNetTool.exe")
     const build_source_path = path.join(__dirname, "GetBrowserUrlNetTool", "dist", "GetBrowserUrlNetTool.exe")
 
-    if (!fs.existsSync(build_source_path)) {
-        require('./build-dotnet.js');
-    }
-
     if (!fs.existsSync(source_exe_dest)) {
         fs.mkdirSync(source_fold_dest, { recursive: true });
         fs.renameSync(build_source_path, source_exe_dest)
