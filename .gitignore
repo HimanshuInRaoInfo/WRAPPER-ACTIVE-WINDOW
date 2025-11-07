@@ -1,0 +1,116 @@
+# ==========================
+# 🧱 GENERAL
+# ==========================
+.DS_Store
+Thumbs.db
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+*.pid
+*.seed
+*.pid.lock
+
+# ==========================
+# 🧰 NODE / ELECTRON
+# ==========================
+node_modules/
+dist/
+build/
+out/
+release/
+temp/
+.tmp/
+coverage/
+.cache/
+*.tgz
+
+# Electron build outputs
+app/dist/
+app/build/
+*.asar
+*.asar.unpacked/
+resources/native/*.pdb
+
+# npm / pnpm / yarn
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# ==========================
+# ⚙️ DOTNET / VISUAL STUDIO
+# ==========================
+## Build results
+bin/
+obj/
+dist/
+[Bb]uild/
+[Ll]ogs/
+[Tt]est[Rr]esults/
+*.VisualState.xml
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Publish outputs
+publish/
+artifacts/
+*.exe
+*.dll
+*.pdb
+*.appx
+*.appxupload
+*.msix
+*.msixupload
+*.msixbundle
+*.zip
+*.tar
+*.7z
+
+## NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+project.lock.json
+project.fragment.lock.json
+
+## Rider / VSCode
+.idea/
+.vscode/
+.vs/
+*.csproj.user
+
+# ==========================
+# 🧩 OS / SYSTEM
+# ==========================
+ehthumbs.db
+Icon?
+Desktop.ini
+$RECYCLE.BIN/
+
+# ==========================
+# 🔐 ENVIRONMENT / CONFIG
+# ==========================
+.env
+.env.*
+*.local
+config.json
+secrets.json
+
+# ==========================
+# 🧪 TEST / TEMP
+# ==========================
+__pycache__/
+*.pyc
+test-results.xml
+coverage-final.json
+jest-test-results.json
+
+# ==========================
+# 📦 PACKAGE FILES (optional)
+# ==========================
+# Uncomment below if you don't want to commit the .NET EXE itself
