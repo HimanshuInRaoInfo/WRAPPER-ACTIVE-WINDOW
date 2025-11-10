@@ -9,7 +9,7 @@ function setupForWindows() {
 
     defaultPaths.chrome = Path.join(appDataDirectory, "Local", "Google", "Chrome", "User Data");
     defaultPaths.avast = Path.join(appDataDirectory, "Local", "Google", "AVAST Software", "User Data");
-    defaultPaths.firefox = Path.join(appDataDirectory, "Roaming", "Mozilla", "Firefox", "User Data");
+    defaultPaths.firefox = Path.join(appDataDirectory, "Roaming", "Mozilla", "Firefox");
     defaultPaths.opera = Path.join(appDataDirectory, "Roaming", "Opera Software", "Opera Stable");
     defaultPaths.edge = Path.join(appDataDirectory, "Local", "Microsoft", "Edge", "User Data");
     defaultPaths.torch = Path.join(appDataDirectory, "Local", "Torch", "User Data");

@@ -72,8 +72,8 @@ class ExtractUrlHistory {
 
     createPaths = async (currentApp) => {
         try {
-            const raw = fs.readFileSync(this.localStatePath, "utf-8");
-            if (raw && fs.existsSync(this.localStatePath)) {
+            if (fs.existsSync(this.localStatePath)) {
+                const raw = fs.readFileSync(this.localStatePath, "utf-8");
                 const localState = JSON.parse(raw);
                 const lastActive = localState?.profile?.last_active_profiles;
                 const lastUsedProfile = localState?.profile?.last_used;
@@ -286,6 +286,7 @@ class ExtractUrlHistory {
                         this.localStatePath = path.join(this.userDataPath, "Local State");
                         findApplication = await this.createPaths(currentApplication);
                     }
+                    
                     if (findApplication) {
                         resolve(findApplication);
                     } else {
