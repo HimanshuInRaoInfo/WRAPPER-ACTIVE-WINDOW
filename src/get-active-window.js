@@ -84,7 +84,9 @@ class GetActiveWindow {
         }
     }
 
-    getLinuxInfo() { }
+    getLinuxInfo() {
+        return this.getDataFromHistory();
+    }
 
     getDarwinInfo() {
         return this.getActiveWin();
