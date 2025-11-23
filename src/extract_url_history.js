@@ -8,7 +8,7 @@ const stringFilter = require("./string_filteration");
 class ExtractUrlHistory {
     userDataPath;
     localStatePath;
-
+    createdTemPath = [];
     constructor() {
         this.setPathsOlyWindows();
     }
@@ -79,12 +79,16 @@ class ExtractUrlHistory {
                 const lastUsedProfile = localState?.profile?.last_used;
                 let results = [];
                 if (Array.isArray(lastActive) && lastActive.length > 0) {
+                    // Remove all previous temp files
                     const tempPaths = lastActive.map((profile) => {
                         const tempPath = path.join(os.tmpdir(), `${profile}.db`);
                         const localStatePath = path.join(this.userDataPath, profile, "History");
                         fs.copyFileSync(localStatePath, tempPath);
+                        console.log("Pushed temp path", tempPath);
                         return { tempPath, profile };
-                    })
+                    });
+
+                    this.createdTemPath = tempPaths.map(tp => tp.tempPath);
 
                     for (let i = 0; i < tempPaths.length;) {
                         let history = await this.readHistory(tempPaths[i].tempPath);
@@ -191,12 +195,15 @@ class ExtractUrlHistory {
             let fileLocations = this.findPaths(currentProvidedApp.owner.path, this.userDataPath);
             let results = [];
             if (Array.isArray(fileLocations) && fileLocations.length > 0) {
+
                 const tempPaths = fileLocations.map((pathsLocation) => {
                     let randomName = Math.floor(Math.random() * 9000000000) + 1000000000;
                     const tempPath = path.join(os.tmpdir(), `${randomName}.db`);
                     fs.copyFileSync(pathsLocation, tempPath);
                     return { tempPath };
                 })
+
+                this.createdTemPath = tempPaths.map(tp => tp.tempPath);
 
                 for (let i = 0; i < tempPaths.length;) {
                     let history = await this.readHistory(tempPaths[i].tempPath);
@@ -286,7 +293,19 @@ class ExtractUrlHistory {
                         this.localStatePath = path.join(this.userDataPath, "Local State");
                         findApplication = await this.createPaths(currentApplication);
                     }
-                    
+
+                    console.log("Before removing temp files", this.createdTemPath);
+                    if (this.createdTemPath.length > 0) {
+                        for (let path = 0; path < this.createdTemPath.length; path++) {
+                            if (fs.existsSync(this.createdTemPath[path])) {
+                                console.log("Removing temp file", this.createdTemPath[path]);
+                                fs.unlinkSync(this.createdTemPath[path]);
+                            }
+                        }
+                    }
+                    this.createdTemPath = [];
+                    console.log("After removing temp files", this.createdTemPath);
+
                     if (findApplication) {
                         resolve(findApplication);
                     } else {
