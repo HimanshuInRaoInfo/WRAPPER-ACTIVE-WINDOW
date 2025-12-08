@@ -164,14 +164,13 @@ module.exports = {
 Executes the .NET tool with the browser's process ID and captures the URL from stdout.
 
 **Features:**
-- 15-second timeout for process execution
 - URL validation and normalization
 - Auto-adds `https://` protocol if missing
 - Error handling with graceful fallback
 
 **Key Function:**
 ```javascript
-async function getBrowserUrlForActiveWindow(pid, timeoutMs = 15000)
+async function getBrowserUrlForActiveWindow(pid)
 ```
 
 **Input:** Browser process ID  
@@ -497,14 +496,6 @@ node build-dotnet.js
 - Check if `result.historyMatches` exists
 - Verify the window title matches the page title
 - Ensure browser history contains recent entries
-
-### Issue: Native tool timeout
-
-**Cause:** Browser UI Automation is slow or blocked  
-**Solution:** Increase timeout in `get-url-from-exe.js`:
-```javascript
-return await runExeGetStdout(source_exe_dest, String(pid), 30000); // 30 seconds
-```
 
 ---
 
