@@ -163,11 +163,11 @@ Reads browser history databases and matches window titles using advanced string 
 
 ### Runtime Dependencies
 - Node.js 12+
-- Windows: .NET 6.0+ (bundled in executable)
+- Windows: .NET 8.0+ (bundled in executable)
 - SQLite support (via `better-sqlite3`)
 
 ### Build Dependencies (Windows only)
-- .NET SDK 6.0+ (for building native tool)
+- .NET SDK 8.0+ (for building native tool)
 
 ---
 
