@@ -21,7 +21,19 @@ A **cross-platform Node.js package** that tracks the currently active browser wi
 
 ## 📚 Documentation
 
-This project includes two comprehensive README files tailored for different audiences:
+This project includes comprehensive documentation tailored for different audiences:
+
+### 🚀 [Quick Start Guide](./QUICK_START.md)
+**Get Up and Running in 3 Steps**
+- Installation instructions
+- Build commands
+- Basic usage examples
+
+### 📦 [Build Size Optimization](./BUILD_SIZE_OPTIMIZATION.md)
+**Reduce Build Size by 60-70%**
+- Detailed optimization techniques
+- Build comparison and benchmarks
+- Production build guide
 
 ### 👨‍💻 [Developer Documentation](./README_DEVELOPER.md)
 **For Engineers, Developers, and Technical Teams**
@@ -58,7 +70,11 @@ npm install
 ### Build (Windows only)
 
 ```bash
-node build-dotnet.js
+# Standard build
+npm run build
+
+# Optimized build (60-70% smaller)
+npm run build:optimized
 ```
 
 ### Usage
