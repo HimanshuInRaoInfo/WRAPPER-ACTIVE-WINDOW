@@ -14,24 +14,23 @@ if (!fs.existsSync(projectDir)) {
   process.exit(1);
 }
 
-// Optimized build configuration for minimal size
+// Optimized build configuration - NO TRIMMING to preserve UI Automation
 const publishCmd = [
   "dotnet publish",
   "-c Release",
   "-r win-x64",
   "--self-contained true",
   "-p:PublishSingleFile=true",
+  "-p:PublishTrimmed=false",  // DISABLED: Trimming breaks UI Automation
   "-p:IncludeAllContentForSelfExtract=true",
-  "-p:TrimMode=full",                          // Full trimming for smaller size
   "-p:EnableCompressionInSingleFile=true",
-  "-p:ReadyToRun=false",                       // Disable R2R to reduce size
-  "-p:PublishTrimmed=true",                    // Enable IL trimming
-  "-p:TrimUnusedDependencies=true",            // Remove unused dependencies
-  "-p:DebugType=none",                         // No debug symbols
-  "-p:DebugSymbols=false",                     // No debug symbols
-  "-p:Optimize=true",                          // Enable optimizations
-  "-p:InvariantGlobalization=true",            // Remove culture data (~8MB saved)
-  "-p:IncludeNativeLibrariesForSelfExtract=true",
+  "-p:DebugType=none",
+  "-p:DebugSymbols=false",
+  "-p:PublishReadyToRun=false",
+  "-p:EventSourceSupport=false",
+  "-p:HttpActivityPropagationSupport=false",
+  "-p:MetadataUpdaterSupport=false",
+  "-p:UseSystemResourceKeys=true",
   "-o ./dist"
 ].join(" ");
 

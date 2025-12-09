@@ -530,9 +530,7 @@ ISC
 ## 📞 Support
 
 For issues and questions, please open a GitHub issue.
-
----
-
+npm 
 ## 🔮 Future Enhancements
 
 - [ ] Support for Chromium-based Edge on Linux

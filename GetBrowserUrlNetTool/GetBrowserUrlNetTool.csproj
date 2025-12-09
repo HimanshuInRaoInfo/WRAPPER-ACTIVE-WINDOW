@@ -2,16 +2,56 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
-    <PlatformTarget>x64</PlatformTarget>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Nullable>enable</Nullable>
     
-    <!-- Size Optimization -->
+    <!-- Publishing Configuration -->
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
-    <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>partial</TrimMode>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    
+    <!-- Size Optimization: Trimming DISABLED to preserve UI Automation functionality -->
+    <PublishTrimmed>false</PublishTrimmed>
+    <!-- CRITICAL: Trimming breaks UI Automation pattern retrieval -->
+    
+    <!-- Size Optimization: Disable ReadyToRun (saves ~15MB) -->
+    <PublishReadyToRun>false</PublishReadyToRun>
+    
+    <!-- Size Optimization: Remove debug symbols -->
     <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    
+    <!-- Size Optimization: Enable compression -->
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    
+    <!-- Size Optimization: Optimize for size over speed -->
     <Optimize>true</Optimize>
+    
+    <!-- Size Optimization: Remove unused features -->
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <EventSourceSupport>false</EventSourceSupport>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    
+    <!-- Size Optimization: Disable unused Windows Desktop features -->
+    <UseWPF>false</UseWPF>
+    <UseWindowsForms>false</UseWindowsForms>
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
   </PropertyGroup>
+  
+  <!-- Runtime Configuration: Disable unused features via feature switches -->
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Globalization.Invariant" Value="false" />
+    <RuntimeHostConfigurationOption Include="System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization" Value="false" />
+  </ItemGroup>
+
+  <!-- Framework References for UI Automation only (no WPF/WinForms overhead) -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.WindowsDesktop.App" />
+  </ItemGroup>
+  
+  <!-- Trimming disabled - descriptor not needed -->
+
 </Project>

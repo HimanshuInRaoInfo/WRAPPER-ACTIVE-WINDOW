@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <!-- CRITICAL: Preserve ALL UI Automation assemblies to prevent trimming breakage -->
+  <assembly fullname="UIAutomationClient" preserve="all" />
+  <assembly fullname="UIAutomationTypes" preserve="all" />
+  <assembly fullname="UIAutomationProvider" preserve="all" />
+  <assembly fullname="WindowsBase" preserve="all" />
+  <assembly fullname="System.Windows.Automation" preserve="all" />
+  <assembly fullname="Accessibility" preserve="all" />
+  
+  <!-- Preserve our application assembly -->
+  <assembly fullname="GetBrowserUrlNetTool" preserve="all" />
+  <assembly fullname="BrowserAutomation" preserve="all" />
+  
+  <!-- CRITICAL: Preserve pattern types that are accessed via reflection -->
+  <type fullname="System.Windows.Automation.ValuePattern" preserve="all" />
+  <type fullname="System.Windows.Automation.TextPattern" preserve="all" />
+  <type fullname="System.Windows.Automation.AutomationElement" preserve="all" />
+  <type fullname="System.Windows.Automation.PropertyCondition" preserve="all" />
+  <type fullname="System.Windows.Automation.Condition" preserve="all" />
+</linker>
+
