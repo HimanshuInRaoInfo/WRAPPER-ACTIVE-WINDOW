@@ -39,6 +39,16 @@ class GetActiveWindow {
         })
     }
 
+    extractDomain(url) {
+        try {
+            const urlObj = new URL(url);
+            return urlObj.hostname;
+        } catch (error) {
+            // If URL parsing fails, return the original string
+            return url;
+        }
+    }
+
     getDataFromNetTool() {
         return new Promise(async (resolve, reject) => {
             let active_win = this.getActiveWin();
@@ -53,7 +63,7 @@ class GetActiveWindow {
                 if (active_win.owner.processId) {
                     const result_from_tool = await activeWinExe(active_win.owner.processId);
                     if (result_from_tool) {
-                        active_win['url'] = result_from_tool;
+                        active_win['url'] = this.extractDomain(result_from_tool);
                         resolve(active_win);
                     } else {
                         resolve(this.getDataFromHistory());
