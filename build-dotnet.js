@@ -14,23 +14,29 @@ if (!fs.existsSync(projectDir)) {
   process.exit(1);
 }
 
-// Optimized build configuration - NO TRIMMING to preserve UI Automation
+// Final optimization: Maximum safe settings (no trimming/AOT due to UI Automation)
 const publishCmd = [
   "dotnet publish",
   "-c Release",
   "-r win-x64",
   "--self-contained true",
   "-p:PublishSingleFile=true",
-  "-p:PublishTrimmed=false",  // DISABLED: Trimming breaks UI Automation
+  "-p:PublishTrimmed=false",  // UI Automation incompatible
+  "-p:PublishAot=false",      // UI Automation incompatible
   "-p:IncludeAllContentForSelfExtract=true",
   "-p:EnableCompressionInSingleFile=true",
   "-p:DebugType=none",
   "-p:DebugSymbols=false",
   "-p:PublishReadyToRun=false",
+  "-p:InvariantGlobalization=true",
   "-p:EventSourceSupport=false",
   "-p:HttpActivityPropagationSupport=false",
   "-p:MetadataUpdaterSupport=false",
   "-p:UseSystemResourceKeys=true",
+  "-p:StackTraceSupport=false",
+  "-p:EnableUnsafeBinaryFormatterSerialization=false",
+  "-p:TieredCompilation=false",
+  "-p:OptimizationPreference=Size",
   "-o ./dist"
 ].join(" ");
 
