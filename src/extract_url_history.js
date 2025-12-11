@@ -51,7 +51,7 @@ class ExtractUrlHistory {
     extractDomain(url) {
         try {
             const urlObj = new URL(url);
-            return urlObj.hostname;
+            return urlObj.origin;
         } catch (error) {
             // If URL parsing fails, return the original string
             return url;
