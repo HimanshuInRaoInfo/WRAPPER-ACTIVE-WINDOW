@@ -69,7 +69,7 @@ class ExtractUrlHistory {
 
         if (historyMatches.length > 0) {
             let foundedApp = currentApp;
-            foundedApp['historyMatches'] = stringFilter.getTopElementByDetails(historyMatches);
+            foundedApp['historyMatches'] = stringFilter.pickBestRecord(historyMatches);
             foundedApp['profile'] = profile;
             if (foundedApp['historyMatches'] && (foundedApp['historyMatches'].url && foundedApp['historyMatches'].url != "")) {
                 let url = this.extractDomain(foundedApp['historyMatches'].url);

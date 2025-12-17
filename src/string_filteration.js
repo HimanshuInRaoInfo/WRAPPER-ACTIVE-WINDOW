@@ -12,7 +12,32 @@ function getTopElementByDetails(data) {
     });
 }
 
-function compareStrings(inputString, optionString, url, threshold = 0.3) {
+function pickBestRecord(records) {
+    return records
+        .map(r => {
+            const { contains, substring, exactMatch, levenshtein } = r.details;
+
+            // How much of the match is REAL containment
+            const containmentConfidence =
+                (contains * 0.5) +
+                (substring * 0.4) +
+                (exactMatch * 0.1);
+
+            // Penalize accidental similarity
+            const editDistancePenalty =
+                containmentConfidence < 0.4 ? levenshtein * 0.5 : 0;
+
+            const finalScore =
+                r.score +
+                containmentConfidence -
+                editDistancePenalty;
+
+            return { ...r, finalScore };
+        })
+        .sort((a, b) => b.finalScore - a.finalScore)[0];
+}
+
+function compareStrings(inputString, optionString, url, threshold = 0.350) {
     if (!inputString || !optionString) {
         return {
             isMatch: false,
@@ -155,4 +180,4 @@ function calculatePositionalBonus(tokens1, tokens2) {
     return score / Math.max(tokens1.length, tokens2.length);
 }
 
-module.exports = { getTopElementByDetails, compareStrings }
+module.exports = { getTopElementByDetails, compareStrings, pickBestRecord }
