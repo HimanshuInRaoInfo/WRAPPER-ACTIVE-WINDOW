@@ -74,6 +74,7 @@ class ExtractUrlHistory {
             if (foundedApp['historyMatches'] && (foundedApp['historyMatches'].url && foundedApp['historyMatches'].url != "")) {
                 let url = this.extractDomain(foundedApp['historyMatches'].url);
                 foundedApp['url'] = url;
+                foundedApp['isBrowser'] = true;
             }
             return foundedApp;
         } else {

@@ -55,6 +55,7 @@ class GetActiveWindow {
                     // if (result_from_tool) {
                     //     const urlObj = new URL(result_from_tool);
                     //     active_win['url'] = urlObj.origin;
+                    //     active_win['isBrowser] = true;
                     //     resolve(active_win);
                     // } else {
                     resolve(this.getDataFromHistory());
