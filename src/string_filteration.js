@@ -15,23 +15,13 @@ function getTopElementByDetails(data) {
 function pickBestRecord(records) {
     return records
         .map(r => {
-            const { contains, substring, exactMatch, levenshtein } = r.details;
-
-            // How much of the match is REAL containment
-            const containmentConfidence =
-                (contains * 0.5) +
-                (substring * 0.4) +
-                (exactMatch * 0.1);
-
+            const {
+                contains, substring, exactMatch, levenshtein
+            } = r.details;
+            const containmentConfidence = (contains * 0.5) + (substring * 0.4) + (exactMatch * 0.1);
             // Penalize accidental similarity
-            const editDistancePenalty =
-                containmentConfidence < 0.4 ? levenshtein * 0.5 : 0;
-
-            const finalScore =
-                r.score +
-                containmentConfidence -
-                editDistancePenalty;
-
+            const editDistancePenalty = containmentConfidence < 0.4 ? levenshtein * 0.5 : 0;
+            const finalScore = r.score + containmentConfidence - editDistancePenalty;
             return { ...r, finalScore };
         })
         .sort((a, b) => b.finalScore - a.finalScore)[0];
