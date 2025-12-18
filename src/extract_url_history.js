@@ -315,7 +315,6 @@ class ExtractUrlHistory {
                         }
                     }
                     this.createdTemPath = [];
-                    console.log("After removing temp files", this.createdTemPath);
 
                     if (findApplication) {
                         resolve(findApplication);
