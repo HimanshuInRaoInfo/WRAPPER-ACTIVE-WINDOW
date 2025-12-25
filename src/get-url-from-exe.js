@@ -28,24 +28,6 @@ module.exports = async function getBrowserUrlForActiveWindow(pid, timeoutMs = 15
     }
 };
 
-const resultFilter = (result) => {
-    if (typeof result !== 'string' || !result.trim()) return null;
-
-    let trimmed = result.trim();
-
-    // If missing protocol, add https://
-    if (!/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(trimmed)) {
-        trimmed = 'https://' + trimmed;
-    }
-
-    try {
-        const url = new URL(trimmed);
-        if (!url.href) return null;
-        return url.toString();
-    } catch {
-        return null;
-    }
-}
 
 function runExeGetStdout(exePath, argPid, timeoutMs) {
     return new Promise((resolve) => {
@@ -74,8 +56,83 @@ function runExeGetStdout(exePath, argPid, timeoutMs) {
             ) {
                 return resolve(null);
             }
-            const validUrl = resultFilter(stdout);
+
+            const validUrl = resolveAddressBarInput(stdout);
             return resolve(validUrl);
         });
     });
+}
+
+function resolveAddressBarInput(raw) {
+    if (!raw || typeof raw !== 'string') return null;
+
+    const value = raw.trim();
+    if (!value) return null;
+
+    /* ---------------- FILE URL ---------------- */
+    if (/^file:\/\//i.test(value)) {
+        const path = value
+            .replace(/^file:\/\//i, '')
+            .replace(/^\/+/, '');
+        return buildFileRoot(path);
+    }
+
+    /* ---------------- LOCAL PATH ---------------- */
+    if (/^[a-zA-Z]:[\\/]/.test(value)) {
+        return buildFileRoot(value);
+    }
+
+    /* ---------------- INTERNAL / EXTENSION ---------------- */
+    if (/^(about|chrome|edge|brave|opera|vivaldi|moz-extension|chrome-extension):\/\//i.test(value)) {
+        return value;
+    }
+
+    /* ---------------- FULL WEB URL ---------------- */
+    if (/^https?:\/\//i.test(value)) {
+        try {
+            const url = new URL(value);
+            return url.origin; // ✅ ONLY ORIGIN
+        } catch {
+            return null;
+        }
+    }
+
+    /* ---------------- LOCALHOST ---------------- */
+    if (/^localhost(:\d+)?(\/.*)?$/i.test(value)) {
+        return `http://${value.split('/')[0]}`;
+    }
+
+    /* ---------------- IPV4 ---------------- */
+    if (/^(\d{1,3}\.){3}\d{1,3}(:\d+)?(\/.*)?$/.test(value)) {
+        return `http://${value.split('/')[0]}`;
+    }
+
+    /* ---------------- DOMAIN ONLY ---------------- */
+    if (/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/.*)?$/.test(value)) {
+        const domain = value.split('/')[0];
+        return `https://${domain}`;
+    }
+
+    return null;
+}
+
+function buildFileRoot(path) {
+    if (!path) return null;
+
+    const normalized = path.replace(/\\/g, '/');
+
+    // ✅ CASE 1: Drive root only (C:/)
+    const driveOnly = normalized.match(/^([a-zA-Z]:)\/?$/);
+    if (driveOnly) {
+        return `file://${driveOnly[1]}/`;
+    }
+
+    // ✅ CASE 2: Drive + first folder (C:/Users/...)
+    const match = normalized.match(/^([a-zA-Z]:)\/([^/]+)/);
+    if (!match) return null;
+
+    const drive = match[1];
+    const firstFolder = match[2];
+
+    return `file://${drive}/${firstFolder}/`;
 }

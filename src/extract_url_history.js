@@ -50,6 +50,17 @@ class ExtractUrlHistory {
 
     extractDomain(url) {
         try {
+            /* ---------------- FILE URL ---------------- */
+            if (/^file:\/\//i.test(value)) {
+                const path = value.replace(/^file:\/\//i, '').replace(/^\/+/, '');
+                return this.buildFileRoot(path);
+            }
+
+            /* ---------------- LOCAL PATH ---------------- */
+            if (/^[a-zA-Z]:[\\/]/.test(value)) {
+                return this.buildFileRoot(value);
+            }
+
             const urlObj = new URL(url);
             return urlObj.origin;
         } catch (error) {
@@ -57,6 +68,28 @@ class ExtractUrlHistory {
             return url;
         }
     }
+
+    buildFileRoot(path) {
+        if (!path) return null;
+
+        const normalized = path.replace(/\\/g, '/');
+
+        // ✅ CASE 1: Drive root only (C:/)
+        const driveOnly = normalized.match(/^([a-zA-Z]:)\/?$/);
+        if (driveOnly) {
+            return `file://${driveOnly[1]}/`;
+        }
+
+        // ✅ CASE 2: Drive + first folder (C:/Users/...)
+        const match = normalized.match(/^([a-zA-Z]:)\/([^/]+)/);
+        if (!match) return null;
+
+        const drive = match[1];
+        const firstFolder = match[2];
+
+        return `file://${drive}/${firstFolder}/`;
+    }
+
 
     matchActiveTitleToHistory(history, currentApp, profile) {
         let historyMatches = [];
