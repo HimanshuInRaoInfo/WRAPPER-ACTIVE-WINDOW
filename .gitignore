@@ -114,3 +114,13 @@ jest-test-results.json
 # 📦 PACKAGE FILES (optional)
 # ==========================
 # Uncomment below if you don't want to commit the .NET EXE itself
+# native/*.exe
+
+# ==========================
+# 🚀 BUILD OPTIMIZATION
+# ==========================
+# Keep the optimized exe in native/ folder
+# but ignore build artifacts
+GetBrowserUrlNetTool/bin/
+GetBrowserUrlNetTool/obj/
+GetBrowserUrlNetTool/dist/

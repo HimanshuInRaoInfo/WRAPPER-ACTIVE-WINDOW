@@ -8,6 +8,16 @@ const getActiveWindow = async () => {
     return result;
 }
 
+
+// For testing uncomment the following code and comment the code below it
+
+// setInterval(() => {  
+//     console.log("Getting active window...");
+//     getActiveWindow().then(result => {
+//         console.log("result", result.url);
+//     });
+// }, 1000);
+
 module.exports = {
     getActiveWindow
 }

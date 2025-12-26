@@ -53,7 +53,8 @@ class GetActiveWindow {
                 if (active_win.owner.processId) {
                     const result_from_tool = await activeWinExe(active_win.owner.processId);
                     if (result_from_tool) {
-                        active_win['url'] = result_from_tool;
+                        const urlObj = new URL(result_from_tool);
+                        active_win['url'] = urlObj.origin;
                         resolve(active_win);
                     } else {
                         resolve(this.getDataFromHistory());

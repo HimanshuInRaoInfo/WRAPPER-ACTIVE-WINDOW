@@ -48,6 +48,16 @@ class ExtractUrlHistory {
         });
     }
 
+    extractDomain(url) {
+        try {
+            const urlObj = new URL(url);
+            return urlObj.origin;
+        } catch (error) {
+            // If URL parsing fails, return the original string
+            return url;
+        }
+    }
+
     matchActiveTitleToHistory(history, currentApp, profile) {
         let historyMatches = [];
         for (const h of history) {
@@ -62,7 +72,8 @@ class ExtractUrlHistory {
             foundedApp['historyMatches'] = stringFilter.getTopElementByDetails(historyMatches);
             foundedApp['profile'] = profile;
             if (foundedApp['historyMatches'] && (foundedApp['historyMatches'].url && foundedApp['historyMatches'].url != "")) {
-                foundedApp['url'] = foundedApp['historyMatches'].url;
+                let url = this.extractDomain(foundedApp['historyMatches'].url);
+                foundedApp['url'] = url;
             }
             return foundedApp;
         } else {
