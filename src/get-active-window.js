@@ -116,6 +116,10 @@ class GetActiveWindow {
             return true;
         } else if (path.toLowerCase().includes("firefox")) {
             return true;
+        } else if (path.toLowerCase().includes("uc")) {
+            return true;
+        } else if (path.toLowerCase().includes("ucbrowser")) {
+            return true;
         } else if (path.toLowerCase().includes("avast")) {
             return true;
         } else {

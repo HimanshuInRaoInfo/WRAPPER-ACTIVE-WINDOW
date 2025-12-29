@@ -229,6 +229,18 @@ class ExtractUrlHistory {
             } else {
                 currentApplication = false;
             }
+        } else if (path.toLowerCase().includes("uc")) {
+            if (browserPaths.ucBrowser) {
+                currentApplication = browserPaths.ucBrowser;
+            } else {
+                currentApplication = false;
+            }
+        } else if (path.toLowerCase().includes("ucbrowser")) {
+            if (browserPaths.ucBrowser) {
+                currentApplication = browserPaths.ucBrowser;
+            } else {
+                currentApplication = false;
+            }
         } else {
             currentApplication = false;
         }

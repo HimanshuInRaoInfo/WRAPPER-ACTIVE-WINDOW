@@ -16,8 +16,6 @@ namespace BrowserAutomation
         {
             if (timeout == null) timeout = TimeSpan.FromSeconds(3);
             var deadline = DateTime.UtcNow + timeout.Value;
-            var root = AutomationElement.RootElement;
-            if (root == null) throw new InvalidOperationException("UI Automation root element not available.");
 
             string? ExtractText(AutomationElement el)
             {
@@ -43,116 +41,131 @@ namespace BrowserAutomation
                 return null;
             }
 
-            string[] nameKeywords = new[]
+            try
             {
-                "address and search",
-                "omnibox",
-                "address",
-                "url",
-                "search or enter web address",
-                "search"
-            };
-
-            while (DateTime.UtcNow < deadline)
-            {
-                try
+                var root = AutomationElement.RootElement;
+                if (root == null)
                 {
-                    var topChildren = root.FindAll(TreeScope.Children, Condition.TrueCondition)
-                        .Cast<AutomationElement>()
-                        .Where(e =>
-                        {
-                            try { return e.Current.ProcessId == pid && e.Current.ControlType == ControlType.Window; }
-                            catch { return false; }
-                        })
-                        .ToArray();
+                    throw new InvalidOperationException("UI Automation root element not available.");
+                }
 
-                    foreach (var win in topChildren)
+                string[] nameKeywords = new[]
+                {
+                    "address and search",
+                    "omnibox",
+                    "address",
+                    "url",
+                    "search or enter web address",
+                    "search",
+                    "urlbar-input",
+                    "urlbar-input textbox-input",
+                    "search with google or enter address",
+                    "address bar",
+                    "addressbarview",
+                    "address field"
+                };
+                while (DateTime.UtcNow < deadline)
+                {
+                    try
                     {
-                        var edits = win.FindAll(TreeScope.Descendants,
-                            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit))
+                        var topChildren = root.FindAll(TreeScope.Children, Condition.TrueCondition)
                             .Cast<AutomationElement>()
                             .Where(e =>
                             {
-                                try
-                                {
-                                    var name = e.Current.Name ?? string.Empty;
-                                    var aid = e.Current.AutomationId ?? string.Empty;
-                                    var cname = e.Current.ClassName ?? string.Empty;
-                                    var combined = (name + " " + aid + " " + cname).ToLowerInvariant();
-                                    return nameKeywords.Any(k => combined.Contains(k));
-                                }
+                                try { return e.Current.ProcessId == pid && e.Current.ControlType == ControlType.Window; }
                                 catch { return false; }
                             })
                             .ToArray();
 
-                        if (!edits.Any())
+                        foreach (var win in topChildren)
                         {
-                            edits = win.FindAll(TreeScope.Descendants,
+                            var edits = win.FindAll(TreeScope.Descendants,
                                 new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit))
                                 .Cast<AutomationElement>()
                                 .Where(e =>
                                 {
                                     try
                                     {
-                                        return !e.Current.IsOffscreen && e.Current.IsEnabled;
+                                        var name = e.Current.Name ?? string.Empty;
+                                        var aid = e.Current.AutomationId ?? string.Empty;
+                                        var cname = e.Current.ClassName ?? string.Empty;
+                                        var combined = (name + " " + aid + " " + cname).ToLowerInvariant();
+                                        return nameKeywords.Any(k => combined.Contains(k));
                                     }
                                     catch { return false; }
                                 })
                                 .ToArray();
-                        }
 
-                        foreach (var edit in edits)
-                        {
-                            var text = ExtractText(edit);
-                            if (!string.IsNullOrWhiteSpace(text))
+                            if (!edits.Any())
                             {
-                                var trimmed = text.Trim();
-                                if (trimmed.Length > 3 && (trimmed.StartsWith("http", StringComparison.OrdinalIgnoreCase) || trimmed.Contains(".")))
+                                edits = win.FindAll(TreeScope.Descendants,
+                                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit))
+                                    .Cast<AutomationElement>()
+                                    .Where(e =>
+                                    {
+                                        try
+                                        {
+                                            return !e.Current.IsOffscreen && e.Current.IsEnabled;
+                                        }
+                                        catch { return false; }
+                                    })
+                                    .ToArray();
+                            }
+
+                            foreach (var edit in edits)
+                            {
+                                var text = ExtractText(edit);
+                                if (!string.IsNullOrWhiteSpace(text))
+                                {
+                                    var trimmed = text.Trim();
+                                    if (trimmed.Length > 3 && (trimmed.StartsWith("http", StringComparison.OrdinalIgnoreCase) || trimmed.Contains(".")))
+                                        return trimmed;
                                     return trimmed;
-                                return trimmed;
-                            }
+                                }
 
-                            try
-                            {
-                                edit.SetFocus();
-                                Thread.Sleep(80);
-                                var text2 = ExtractText(edit);
-                                if (!string.IsNullOrWhiteSpace(text2)) return text2.Trim();
-                            }
-                            catch { }
-                        }
-
-                        var candidates = win.FindAll(TreeScope.Descendants, Condition.TrueCondition)
-                            .Cast<AutomationElement>()
-                            .Where(e =>
-                            {
                                 try
                                 {
-                                    var name = e.Current.Name ?? string.Empty;
-                                    var combined = name.ToLowerInvariant();
-                                    return nameKeywords.Any(k => combined.Contains(k))
-                                           && e.TryGetCurrentPattern(ValuePattern.Pattern, out _);
+                                    edit.SetFocus();
+                                    Thread.Sleep(80);
+                                    var text2 = ExtractText(edit);
+                                    if (!string.IsNullOrWhiteSpace(text2)) return text2.Trim();
                                 }
-                                catch { return false; }
-                            })
-                            .ToArray();
+                                catch { }
+                            }
 
-                        foreach (var cand in candidates)
-                        {
-                            var text = ExtractText(cand);
-                            if (!string.IsNullOrWhiteSpace(text)) return text.Trim();
+                            var candidates = win.FindAll(TreeScope.Descendants, Condition.TrueCondition)
+                                .Cast<AutomationElement>()
+                                .Where(e =>
+                                {
+                                    try
+                                    {
+                                        var name = e.Current.Name ?? string.Empty;
+                                        var combined = name.ToLowerInvariant();
+                                        return nameKeywords.Any(k => combined.Contains(k))
+                                               && e.TryGetCurrentPattern(ValuePattern.Pattern, out _);
+                                    }
+                                    catch { return false; }
+                                })
+                                .ToArray();
+
+                            foreach (var cand in candidates)
+                            {
+                                var text = ExtractText(cand);
+                                if (!string.IsNullOrWhiteSpace(text)) return text.Trim();
+                            }
                         }
                     }
-                }
-                catch
-                {
-                    // ignore and retry until timeout
+                    catch
+                    { }
+                    Thread.Sleep(150);
                 }
 
-                Thread.Sleep(150);
+                return null;
             }
-
-            return null;
+            catch (Exception error)
+            {
+                return null;
+            }
         }
     }
 }
