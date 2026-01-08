@@ -53,19 +53,24 @@ class ExtractUrlHistory {
             /* ---------------- FILE URL ---------------- */
             if (/^file:\/\//i.test(value)) {
                 const path = value.replace(/^file:\/\//i, '').replace(/^\/+/, '');
+                console.log("---------------- FILE URL FROM HISTORY DETECTS ---------------- \n", this.buildFileRoot(path))
                 return this.buildFileRoot(path);
             }
 
             /* ---------------- LOCAL PATH ---------------- */
             if (/^[a-zA-Z]:[\\/]/.test(value)) {
+                console.log("---------------- LOCAL PATH FROM HISTORY DETECTS ---------------- \n", this.buildFileRoot(value))
                 return this.buildFileRoot(value);
             }
 
             const urlObj = new URL(url);
+            console.log("---------------- RETURNS URL FROM HISTORY MATCHES ---------------- \n", urlObj.origin)
             return urlObj.origin;
         } catch (error) {
             // If URL parsing fails, return the original string
-            return url;
+            const urlObj = new URL(url);
+            console.log("---------------- ERROR OCCURS DURING EXTRACT DOMAIN FROM HISTORY MATCHES ---------------- \n", urlObj.origin);
+            return urlObj.origin;
         }
     }
 
@@ -129,7 +134,6 @@ class ExtractUrlHistory {
                         const tempPath = path.join(os.tmpdir(), `${profile}.db`);
                         const localStatePath = path.join(this.userDataPath, profile, "History");
                         fs.copyFileSync(localStatePath, tempPath);
-                        console.log("Pushed temp path", tempPath);
                         return { tempPath, profile };
                     });
 
@@ -362,6 +366,7 @@ class ExtractUrlHistory {
                     }
                     this.createdTemPath = [];
 
+                    console.log("What we receive from history ", findApplication);
                     if (findApplication) {
                         resolve(findApplication);
                     } else {

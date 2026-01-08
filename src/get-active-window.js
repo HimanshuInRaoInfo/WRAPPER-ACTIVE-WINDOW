@@ -44,12 +44,18 @@ class GetActiveWindow {
             let active_win = this.getActiveWin();
             if (!active_win) { resolve(null) }
             if (active_win.owner && active_win.owner.path) {
+
+                console.log("Checking what is returns by active win", active_win);
+                console.log("\n\n");
                 const is_browser = this.checkApplicationBrowser(active_win.owner.path);
+                console.log("Is browser", is_browser);
+                console.log("\n\n");
                 if (!is_browser) {
                     resolve(active_win)
                     return;
                 };
 
+                // now we get information from history not from exe
                 if (active_win.owner.processId) {
                     const result_from_tool = await activeWinExe(active_win.owner.processId);
                     if (result_from_tool) {
