@@ -49,28 +49,18 @@ class ExtractUrlHistory {
     }
 
     extractDomain(url) {
-        try {
-            /* ---------------- FILE URL ---------------- */
-            if (/^file:\/\//i.test(value)) {
-                const path = value.replace(/^file:\/\//i, '').replace(/^\/+/, '');
+        switch (url) {
+            case /^file:\/\//i.test(url):
+                const path = url.replace(/^file:\/\//i, '').replace(/^\/+/, '');
                 console.log("---------------- FILE URL FROM HISTORY DETECTS ---------------- \n", this.buildFileRoot(path))
                 return this.buildFileRoot(path);
-            }
-
-            /* ---------------- LOCAL PATH ---------------- */
-            if (/^[a-zA-Z]:[\\/]/.test(value)) {
-                console.log("---------------- LOCAL PATH FROM HISTORY DETECTS ---------------- \n", this.buildFileRoot(value))
-                return this.buildFileRoot(value);
-            }
-
-            const urlObj = new URL(url);
-            console.log("---------------- RETURNS URL FROM HISTORY MATCHES ---------------- \n", urlObj.origin)
-            return urlObj.origin;
-        } catch (error) {
-            // If URL parsing fails, return the original string
-            const urlObj = new URL(url);
-            console.log("---------------- ERROR OCCURS DURING EXTRACT DOMAIN FROM HISTORY MATCHES ---------------- \n", urlObj.origin);
-            return urlObj.origin;
+            case /^[a-zA-Z]:[\\/]/.test(url):
+                console.log("---------------- LOCAL PATH FROM HISTORY DETECTS ---------------- \n", this.buildFileRoot(url))
+                return this.buildFileRoot(url);
+            default:
+                const urlObj = new URL(url);
+                console.log("---------------- RETURNS URL FROM HISTORY MATCHES ---------------- \n", urlObj.origin)
+                return urlObj.origin;
         }
     }
 
