@@ -83,7 +83,7 @@ function resolveAddressBarInput(raw) {
     }
 
     /* ---------------- INTERNAL / EXTENSION ---------------- */
-    if (/^(about|chrome|edge|brave|opera|vivaldi|moz-extension|chrome-extension):\/\//i.test(value)) {
+    if (/^(about|chrome|edge|brave|opera|vivaldi|moz-extension|chrome-extension|comet|):\/\//i.test(value)) {
         console.log("---------------- INTERNAL EXTENSION BROWSER ---------------- \n", value);
         return value;
     }

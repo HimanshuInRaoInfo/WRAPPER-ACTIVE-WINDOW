@@ -14,9 +14,9 @@ const setUpJsonBrowserFile = async (browserData) => {
     save_path_browser.saveFile(browserData)
 }
 
-// // For testing uncomment the following code and comment the code below it
+// For testing uncomment the following code and comment the code below it
 
-// setInterval(() => {
+// setInterval(() => { 
 //     console.log("\n\n")
 //     getActiveWindow().then(result => {
 //         console.log("result", result);

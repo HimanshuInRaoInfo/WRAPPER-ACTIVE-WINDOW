@@ -2,39 +2,18 @@ const fs = require("fs");
 const path = require("path");
 const Database = require('better-sqlite3');
 const os = require("os");
-const setupDefaultPaths = require("./history_path");
 const stringFilter = require("./string_filteration");
-
+const { extractDomain } = require("./utils");
 class ExtractUrlHistory {
     userDataPath;
     localStatePath;
     createdTemPath = [];
-    constructor() {
-        this.setPathsOlyWindows();
-    }
+    constructor() { }
 
-    setPathsOlyWindows() {
-        if (os.type() == "Windows_NT") {
-            this.userDataPath = path.join(process.env.LOCALAPPDATA, "Google", "Chrome", "User Data");
-            this.localStatePath = path.join(this.userDataPath, "Local State");
-        }
-    }
-
-    getSQLQuery(applicationPath) {
-        if (applicationPath.toLowerCase().includes("firefox") || applicationPath.toLowerCase().includes("seamonkey")) {
-            return `SELECT moz_places.url AS url, moz_places.title AS title, datetime(moz_places.last_visit_date / 1000000, 'unixepoch') AS last_visit FROM moz_places WHERE datetime(moz_places.last_visit_date / 1000000, 'unixepoch') > datetime('now', '-24 hours') ORDER BY moz_places.last_visit_date DESC`;
-        } else if (applicationPath.toLowerCase().includes("maxthon")) {
-            return `SELECT zurl AS url, ztitle AS title, datetime(ZLASTVISITDATE / 1000000, 'unixepoch') AS last_visit FROM zmxhistoryentry WHERE datetime(ZLASTVISITDATE / 1000000, 'unixepoch') > datetime('now', '-24 hours') ORDER BY ZLASTVISITDATE DESC`;
-        } else {
-            return `SELECT urls.url AS url, urls.title AS title, datetime((urls.last_visit_time / 1000000) - 11644473600, 'unixepoch') AS last_visit FROM urls WHERE datetime((urls.last_visit_time / 1000000) - 11644473600, 'unixepoch') > datetime('now', '-24 hours') ORDER BY urls.last_visit_time DESC`;
-        }
-    }
-
-    readHistory(tempPath) { // this will read history from browsers db files...
+    readHistory(tempPath, query) { // this will read history from browsers db files...
         return new Promise((resolve) => {
             try {
                 const db = new Database(tempPath, { readonly: true });
-                const query = this.getSQLQuery(this.userDataPath);
 
                 const stmt = db.prepare(query);
                 const rows = stmt.all(); // synchronous
@@ -46,43 +25,6 @@ class ExtractUrlHistory {
                 resolve([]);
             }
         });
-    }
-
-    extractDomain(url) {
-        switch (url) {
-            case /^file:\/\//i.test(url):
-                const path = url.replace(/^file:\/\//i, '').replace(/^\/+/, '');
-                console.log("---------------- FILE URL FROM HISTORY DETECTS ---------------- \n", this.buildFileRoot(path))
-                return this.buildFileRoot(path);
-            case /^[a-zA-Z]:[\\/]/.test(url):
-                console.log("---------------- LOCAL PATH FROM HISTORY DETECTS ---------------- \n", this.buildFileRoot(url))
-                return this.buildFileRoot(url);
-            default:
-                const urlObj = new URL(url);
-                console.log("---------------- RETURNS URL FROM HISTORY MATCHES ---------------- \n", urlObj.origin)
-                return urlObj.origin;
-        }
-    }
-
-    buildFileRoot(path) {
-        if (!path) return null;
-
-        const normalized = path.replace(/\\/g, '/');
-
-        // ✅ CASE 1: Drive root only (C:/)
-        const driveOnly = normalized.match(/^([a-zA-Z]:)\/?$/);
-        if (driveOnly) {
-            return `file://${driveOnly[1]}/`;
-        }
-
-        // ✅ CASE 2: Drive + first folder (C:/Users/...)
-        const match = normalized.match(/^([a-zA-Z]:)\/([^/]+)/);
-        if (!match) return null;
-
-        const drive = match[1];
-        const firstFolder = match[2];
-
-        return `file://${drive}/${firstFolder}/`;
     }
 
 
@@ -100,7 +42,7 @@ class ExtractUrlHistory {
             foundedApp['historyMatches'] = stringFilter.pickBestRecord(historyMatches);
             foundedApp['profile'] = profile;
             if (foundedApp['historyMatches'] && (foundedApp['historyMatches'].url && foundedApp['historyMatches'].url != "")) {
-                let url = this.extractDomain(foundedApp['historyMatches'].url);
+                let url = extractDomain(foundedApp['historyMatches'].url);
                 foundedApp['url'] = url;
                 foundedApp['isBrowser'] = true;
             }
@@ -110,7 +52,7 @@ class ExtractUrlHistory {
         }
     }
 
-    createPaths = async (currentApp) => {
+    createPaths = async (currentApp, browserInformation) => {
         try {
             if (fs.existsSync(this.localStatePath)) {
                 const raw = fs.readFileSync(this.localStatePath, "utf-8");
@@ -130,7 +72,7 @@ class ExtractUrlHistory {
                     this.createdTemPath = tempPaths.map(tp => tp.tempPath);
 
                     for (let i = 0; i < tempPaths.length;) {
-                        let history = await this.readHistory(tempPaths[i].tempPath);
+                        let history = await this.readHistory(tempPaths[i].tempPath, browserInformation.sqlQuery);
                         if (history.length === 0) {
                             console.log("⚠️ No history found.");
                             i++;
@@ -159,7 +101,7 @@ class ExtractUrlHistory {
                     return null;
                 }
             } else {
-                return this.createPathsForLinux(currentApp);
+                return null;
             }
         } catch (err) {
             console.log("Error while getting local state:", err);
@@ -167,83 +109,9 @@ class ExtractUrlHistory {
         }
     }
 
-    applicationName(path, browserPaths) {
-        let currentApplication = "";
-        if (path.toLowerCase().includes("chrome")) {
-            if (browserPaths.chrome) {
-                currentApplication = browserPaths.chrome;
-            } else {
-                currentApplication = false;
-            }
-        } else if (path.toLowerCase().includes("edge") || path.toLowerCase().includes("msedge")) {
-            if (browserPaths.edge) {
-                currentApplication = browserPaths.edge;
-            } else {
-                currentApplication = false;
-            }
-        } else if (path.toLowerCase().includes("brave")) {
-            if (browserPaths.brave) {
-                currentApplication = browserPaths.brave;
-            } else {
-                currentApplication = false;
-            }
-        } else if (path.toLowerCase().includes("vivaldi")) {
-            if (browserPaths.vivaldi) {
-                currentApplication = browserPaths.vivaldi;
-            } else {
-                currentApplication = false;
-            }
-        } else if (path.toLowerCase().includes("seamonkey")) {
-            if (browserPaths.seamonkey) {
-                currentApplication = browserPaths.seamonkey;
-            } else {
-                currentApplication = false;
-            }
-        } else if (path.toLowerCase().includes("torch")) {
-            if (browserPaths.torch) {
-                currentApplication = browserPaths.torch;
-            } else {
-                currentApplication = false;
-            }
-        } else if (path.toLowerCase().includes("opera")) {
-            if (browserPaths.opera) {
-                currentApplication = browserPaths.opera;
-            } else {
-                currentApplication = false;
-            }
-        } else if (path.toLowerCase().includes("firefox")) {
-            if (browserPaths.firefox) {
-                currentApplication = browserPaths.firefox;
-            } else {
-                currentApplication = false;
-            }
-        } else if (path.toLowerCase().includes("avast")) {
-            if (browserPaths.avast) {
-                currentApplication = browserPaths.avast;
-            } else {
-                currentApplication = false;
-            }
-        } else if (path.toLowerCase().includes("uc")) {
-            if (browserPaths.ucBrowser) {
-                currentApplication = browserPaths.ucBrowser;
-            } else {
-                currentApplication = false;
-            }
-        } else if (path.toLowerCase().includes("ucbrowser")) {
-            if (browserPaths.ucBrowser) {
-                currentApplication = browserPaths.ucBrowser;
-            } else {
-                currentApplication = false;
-            }
-        } else {
-            currentApplication = false;
-        }
-        return currentApplication;
-    }
-
-    createPathsForLinux = async (currentProvidedApp) => {
+    createPathsForLinux = async (currentProvidedApp, browserInformation) => {
         try {
-            let fileLocations = this.findPaths(currentProvidedApp.owner.path, this.userDataPath);
+            let fileLocations = this.findFilesInDir(this.userDataPath, browserInformation["linux"]["historyFile"]);
             let results = [];
             if (Array.isArray(fileLocations) && fileLocations.length > 0) {
 
@@ -253,9 +121,7 @@ class ExtractUrlHistory {
                     fs.copyFileSync(pathsLocation, tempPath);
                     return { tempPath };
                 })
-
                 this.createdTemPath = tempPaths.map(tp => tp.tempPath);
-
                 for (let i = 0; i < tempPaths.length;) {
                     let history = await this.readHistory(tempPaths[i].tempPath);
                     if (history.length === 0) {
@@ -267,9 +133,7 @@ class ExtractUrlHistory {
                         i++;
                     }
                 }
-
                 results = results.filter((value) => value);
-
                 if (results.length > 0) {
                     return results[0]
                 } else {
@@ -284,84 +148,67 @@ class ExtractUrlHistory {
         }
     }
 
-    findPaths(applicationPath, browserPath) {
-        if (applicationPath.toLowerCase().includes("firefox") || applicationPath.toLowerCase().includes("seamonkey")) {
-            return this.findFilesInDir(browserPath, ".sqlite", path.sep + 'places.sqlite');
-        } else if (applicationPath.toLowerCase().includes("maxthon")) {
-            return this.findFilesInDir(browserPath, ".dat", path.sep + 'History.dat');
-        } else {
-            return this.findFilesInDir(browserPath, "History", path.sep + 'History');
-        }
-    }
-
-    findFilesInDir(startPath, filter, targetFile, depth = 0) {
+    findFilesInDir(startPath, targetFile, depth = 0) {
         if (depth === 4) {
             return [];
         }
         let results = [];
         if (!fs.existsSync(startPath)) {
-            //console.log("no dir ", startPath);
             return results;
         }
         let files = fs.readdirSync(startPath);
         for (let i = 0; i < files.length; i++) {
             let filename = path.join(startPath, files[i]);
             if (!fs.existsSync(filename)) {
-                // console.log('file doesn\'t exist ', startPath);
                 continue;
             }
             let stat = fs.lstatSync(filename);
             if (stat.isDirectory()) {
-                results = results.concat(this.findFilesInDir(filename, filter, targetFile, depth + 1)); //recurse
+                results = results.concat(this.findFilesInDir(filename, targetFile, depth + 1)); //recurse
             } else if (filename.endsWith(targetFile) === true) {
                 // console.log('-- found: ', filename);
                 results.push(filename);
             }
-            /*
-            } else if (filename.indexOf(filter) >= 0 && regExp.test(filename)) {
-                results.push(filename);
-            } else if (filename.endsWith('\\History') === true) {
-                // console.log('-- found: ', filename);
-                results.push(filename);
-            }*/
         }
         return results;
     }
 
-
-    windowReport(activeWindow) {
+    windowReport(activeWindow, browserInformation) {
         return new Promise(async (resolve, reject) => {
             const currentApplication = activeWindow;
             if (currentApplication?.owner.path) {
-                if (this.applicationName(currentApplication.owner.path, setupDefaultPaths.setupDefaultPaths()) != false) {
-                    let browserPath = this.applicationName(currentApplication.owner.path, setupDefaultPaths.setupDefaultPaths());
-                    let findApplication;
-                    if (os.type() == "Linux") {
-                        this.userDataPath = path.join(browserPath);
-                        findApplication = await this.createPathsForLinux(currentApplication);
-                    } else {
-                        this.userDataPath = path.join(browserPath);
-                        this.localStatePath = path.join(this.userDataPath, "Local State");
-                        findApplication = await this.createPaths(currentApplication);
+                let findApplication;
+                const appDataDirectory = path.join(process.env.HOMEDRIVE, "Users", process.env.USERNAME, "AppData");
+                if (os.type() == "Linux") {
+                    let browserPath = browserInformation['platforms']['linux']['userDataPath'];
+                    this.userDataPath = path.join(appDataDirectory, browserPath);
+                    if (fs.existsSync(this.userDataPath)) {
+                        browserPath = browserInformation['platforms']['linux']['userDataPath'];
+                    } else if (browserInformation['platforms']['linux']['snapPath'] && fs.existsSync(path.join(appDataDirectory, browserInformation['platforms']['linux']['snapPath']))) {
+                        browserPath = browserInformation['platforms']['linux']['snapPath'];
+                        this.userDataPath = path.join(appDataDirectory, browserPath);
                     }
+                    findApplication = await this.createPathsForLinux(currentApplication, browserInformation);
+                } else {
+                    let browserPath = browserInformation['platforms']['win32']['userDataPath'];
+                    this.userDataPath = path.join(appDataDirectory, browserPath);
+                    this.localStatePath = path.join(this.userDataPath, "Local State");
+                    findApplication = await this.createPaths(currentApplication, browserInformation);
+                }
 
-                    console.log("Before removing temp files", this.createdTemPath);
-                    if (this.createdTemPath.length > 0) {
-                        for (let path = 0; path < this.createdTemPath.length; path++) {
-                            if (fs.existsSync(this.createdTemPath[path])) {
-                                console.log("Removing temp file", this.createdTemPath[path]);
-                                fs.unlinkSync(this.createdTemPath[path]);
-                            }
+                console.log("Before removing temp files", this.createdTemPath);
+                if (this.createdTemPath.length > 0) {
+                    for (let path = 0; path < this.createdTemPath.length; path++) {
+                        if (fs.existsSync(this.createdTemPath[path])) {
+                            console.log("Removing temp file", this.createdTemPath[path]);
+                            fs.unlinkSync(this.createdTemPath[path]);
                         }
                     }
-                    this.createdTemPath = [];
+                }
+                this.createdTemPath = [];
 
-                    console.log("What we receive from history ", findApplication);
-                    if (findApplication) {
-                        resolve(findApplication);
-                    } else {
-                        resolve(activeWindow);
-                    }
+                if (findApplication) {
+                    resolve(findApplication);
                 } else {
                     resolve(activeWindow);
                 }
