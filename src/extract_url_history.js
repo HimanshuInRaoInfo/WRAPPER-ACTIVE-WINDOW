@@ -60,6 +60,9 @@ class ExtractUrlHistory {
                 const lastActive = localState?.profile?.last_active_profiles;
                 const lastUsedProfile = localState?.profile?.last_used;
                 let results = [];
+
+                const isGlobalHistoryAvailabel = path.join(this.userDataPath, "History");
+
                 if (Array.isArray(lastActive) && lastActive.length > 0) {
                     // Remove all previous temp files
                     const tempPaths = lastActive.map((profile) => {
@@ -97,6 +100,23 @@ class ExtractUrlHistory {
                     } else {
                         return null;
                     }
+                } else if (fs.existsSync(isGlobalHistoryAvailabel)) {
+                    let tempPath = path.join(os.tmpdir(), `opera_temp.db`);
+                    fs.copyFileSync(isGlobalHistoryAvailabel, tempPath);
+                    let history = await this.readHistory(tempPath, browserInformation.sqlQuery);
+                    let result;
+                    if (history.length === 0) {
+                        console.log("⚠️ No history found.");                            
+                    } else {
+                        result = await this.matchActiveTitleToHistory(history, currentApp, tempPath);
+                    }
+
+                    if (result) {
+                        return result;
+                    } else {
+                        return null;
+                    }
+
                 } else {
                     return null;
                 }
@@ -195,10 +215,10 @@ class ExtractUrlHistory {
                         let userDataPath = "";
                         switch (os_info) {
                             case "win_7":
-                                userDataPath = "userDataPathWin7";
+                                userDataPath = browserInformation['platforms']['win32']["userDataPathWin7"] ? "userDataPathWin7" : "userDataPath";
                                 break;
                             case "win_8":
-                                userDataPath = "userDataPathWin8Plus";
+                                userDataPath = browserInformation['platforms']['win32']["userDataPathWin8Plus"] ? "userDataPathWin8Plus" : "userDataPath";
                                 break;
                             case "win_10":
                                 userDataPath = "userDataPath";
@@ -208,6 +228,7 @@ class ExtractUrlHistory {
                                 break;
                         }
                         let browserPath = browserInformation['platforms']['win32'][userDataPath];
+                        console.log("This is browser paths ", appDataDirectory, browserPath);
                         this.userDataPath = path.join(appDataDirectory, browserPath);
                         this.localStatePath = path.join(this.userDataPath, "Local State");
                         findApplication = await this.createPaths(currentApplication, browserInformation);
