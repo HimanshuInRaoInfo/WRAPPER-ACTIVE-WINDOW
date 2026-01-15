@@ -72,19 +72,19 @@ function resolveAddressBarInput(raw) {
     /* ---------------- FILE URL ---------------- */
     if (/^file:\/\//i.test(value)) {
         const path = value.replace(/^file:\/\//i, '').replace(/^\/+/, '');
-        console.log("---------------- FILE URL ---------------- \n", buildFileRoot(path));
+        console.log("---------------- FILE URL ----------------", buildFileRoot(path));
         return buildFileRoot(path);
     }
 
     /* ---------------- LOCAL PATH ---------------- */
     if (/^[a-zA-Z]:[\\/]/.test(value)) {
-        console.log("---------------- LOCAL PATH ---------------- \n", buildFileRoot(path));
+        console.log("---------------- LOCAL PATH ----------------", buildFileRoot(path));
         return buildFileRoot(value);
     }
 
     /* ---------------- INTERNAL / EXTENSION ---------------- */
     if (/^(about|chrome|edge|brave|opera|vivaldi|moz-extension|chrome-extension|comet|):\/\//i.test(value)) {
-        console.log("---------------- INTERNAL EXTENSION BROWSER ---------------- \n", value);
+        console.log("---------------- INTERNAL EXTENSION BROWSER ----------------", value);
         return value;
     }
 
@@ -92,7 +92,7 @@ function resolveAddressBarInput(raw) {
     if (/^https?:\/\//i.test(value)) {
         try {
             const url = new URL(value);
-            console.log("---------------- FULL WEB URL AND RETURNS ONLY ORIGIN ---------------- \n", url.origin);
+            console.log("---------------- FULL WEB URL AND RETURNS ONLY ORIGIN ----------------", url.origin);
             return url.origin; // ✅ ONLY ORIGIN
         } catch {
             return null;
@@ -101,24 +101,24 @@ function resolveAddressBarInput(raw) {
 
     /* ---------------- LOCALHOST ---------------- */
     if (/^localhost(:\d+)?(\/.*)?$/i.test(value)) {
-        console.log("---------------- LOCALHOST RETURNS ---------------- \n", `http://${value.split('/')[0]}`);
+        console.log("---------------- LOCALHOST RETURNS ----------------", `http://${value.split('/')[0]}`);
         return `http://${value.split('/')[0]}`;
     }
 
     /* ---------------- IPV4 ---------------- */
     if (/^(\d{1,3}\.){3}\d{1,3}(:\d+)?(\/.*)?$/.test(value)) {
-        console.log("---------------- IPV4 RETURNS ---------------- \n", `http://${value.split('/')[0]}`);
+        console.log("---------------- IPV4 RETURNS ----------------", `http://${value.split('/')[0]}`);
         return `http://${value.split('/')[0]}`;
     }
 
     /* ---------------- DOMAIN ONLY ---------------- */
     if (/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/.*)?$/.test(value)) {
         const domain = value.split('/')[0];
-        console.log("---------------- DOMAIN ONLY RETURNS ---------------- \n", `https://${domain}`);
+        console.log("---------------- DOMAIN ONLY RETURNS ----------------", `https://${domain}`);
         return `https://${domain}`;
     }
 
-    console.log("---------------- NOTHING WILL TRACKED AND RETURN NULL ---------------- \n", null);
+    console.log("---------------- NOTHING WILL TRACKED AND RETURN NULL ----------------", null);
     return null;
 }
 

@@ -3,6 +3,10 @@ const activeWin = require("active-win");
 const SetupBrowserJSONData = require("./setup_browser_json");
 const GetCurrentApplicationInfo = require("./get_current_appinfo");
 const { checkApplicationBrowser } = require("./utils");
+const activeWinExe = require("./get-url-from-exe");
+const chalk = require("chalk").Chalk;
+const chalkInstance = new chalk();
+const log = console.log;
 
 class GetActiveWindow {
     constructor(params = null) { }
@@ -33,6 +37,7 @@ class GetActiveWindow {
             if (active_win) {
                 let result = await extract_url_history.getCurrentApplicationInfo(active_win, browserInformationJSON);
                 if (result) {
+                    log(chalkInstance.green(" -- History gets url -- "), result);
                     res(result);
                 } else {
                     res(active_win);
@@ -49,6 +54,7 @@ class GetActiveWindow {
                     if (result_from_tool) {
                         active_win['url'] = result_from_tool;
                         active_win['isBrowser'] = true;
+                        log(chalkInstance.cyan(" -- Native exe gets url -- "), result_from_tool);
                         resolve(active_win);
                     } else {
                         resolve(this.getDataFromHistory());
@@ -69,23 +75,27 @@ class GetActiveWindow {
         // Checking if browser data is available or not
         if (browserData && browserData['browsers']) {
             const is_browser = checkApplicationBrowser(active_win?.owner.name, browserData); // application is browser or not
-            console.log("Is browser", is_browser);
-            console.log("\n\n");
+            log(chalkInstance.blue("Is application is browser"), is_browser);
+            log("\n\n");
             if (!is_browser) {
                 return active_win
             };
         }
         switch (win_type) {
             case "win_7":
+                log(chalkInstance.yellow("System is windows 7 we use history"));
                 return this.getDataFromHistory();
                 break;
             case "win_8":
+                log(chalkInstance.yellow("System is windows 8 we use history"));
                 return this.getDataFromHistory();
                 break;
             case "win_11":
+                log(chalkInstance.yellow("System is windows 11 we use native exe"));
                 return this.getDataFromNetTool(active_win);
                 break;
             case "win_10":
+                log(chalkInstance.yellow("System is windows 10 we use native exe"));
                 return this.getDataFromNetTool(active_win);
                 break;
         }
