@@ -1,3 +1,5 @@
+const os = require("os");
+
 function extractDomain(url) {
     switch (url) {
         case /^file:\/\//i.test(url):
@@ -45,4 +47,23 @@ function checkApplicationBrowser(applicationName, browserData) {
         )) || null;
 }
 
-module.exports = { extractDomain, buildFileRoot, checkApplicationBrowser }
+function checkOsConfiguration() {
+    const os_type = os.type();
+    if (os_type == "Windows_NT") {
+        const release = os.release(); // "10.0.22631"
+        const [major, minor, build] = release.split('.').map(Number);
+        if (major === 6 && minor === 1) return 'win_7';
+        if (major === 6 && minor === 2) return 'win_8';
+        if (major === 6 && minor === 3) return 'win_8';
+        if (major === 10) {
+            if (build >= 22000) {
+                return 'win_11';
+            }
+            return 'win_10';
+        }
+    }
+    return os_type;
+}
+
+
+module.exports = { extractDomain, buildFileRoot, checkApplicationBrowser, checkOsConfiguration }

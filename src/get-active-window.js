@@ -1,46 +1,34 @@
-const os = require("os");
 const activeWin = require("active-win");
 const SetupBrowserJSONData = require("./setup_browser_json");
 const GetCurrentApplicationInfo = require("./get_current_appinfo");
-const { checkApplicationBrowser } = require("./utils");
+const { checkApplicationBrowser, checkOsConfiguration } = require("./utils");
 const activeWinExe = require("./get-url-from-exe");
 const colors = require("colors");
 const log = console.log;
 
 class GetActiveWindow {
-    constructor(params = null) { }
-
-    checkOsConfiguration() {
-        const os_type = os.type();
-        if (os_type == "Windows_NT") {
-            const release = os.release(); // "10.0.22631"
-            const [major, minor, build] = release.split('.').map(Number);
-            if (major === 6 && minor === 1) return 'win_7';
-            if (major === 6 && minor === 2) return 'win_8';
-            if (major === 6 && minor === 3) return 'win_8';
-            if (major === 10) {
-                if (build >= 22000) {
-                    return 'win_11';
-                }
-                return 'win_10';
-            }
-        }
-        return os_type;
+    folderName = "";
+    constructor(folderName) { 
+        this.folderName = folderName;
     }
 
     getDataFromHistory() {
         return new Promise(async (res, rej) => {
             const extract_url_history = new GetCurrentApplicationInfo();
             const active_win = this.getActiveWin();
-            const browserInformationJSON = new SetupBrowserJSONData().getFileData();
-            if (active_win) {
-                let result = await extract_url_history.getCurrentApplicationInfo(active_win, browserInformationJSON);
-                if (result) {
-                    log(" -- History gets url -- ".green, result);
-                    res(result);
-                } else {
-                    res(active_win);
+            const browserInformationJSON = new SetupBrowserJSONData().getFileData(this.folderName);
+            if (browserInformationJSON) {
+                if (active_win) {
+                    let result = await extract_url_history.getCurrentApplicationInfo(active_win, browserInformationJSON);
+                    if (result) {
+                        log(" -- History gets url -- ".green, result);
+                        res(result);
+                    } else {
+                        res(active_win);
+                    }
                 }
+            } else {
+                res(active_win);
             }
         })
     }
@@ -68,7 +56,7 @@ class GetActiveWindow {
     }
 
     getWindowsInfo(win_type) {
-        let browserData = new SetupBrowserJSONData().getFileData();
+        let browserData = new SetupBrowserJSONData().getFileData(this.folderName);
         let active_win = this.getActiveWin();
         if (!active_win) { return null }
         // Checking if browser data is available or not
@@ -79,7 +67,10 @@ class GetActiveWindow {
             if (!is_browser) {
                 return active_win
             };
+        } else {
+            return active_win;
         }
+
         switch (win_type) {
             case "win_7":
                 log("System is windows 7 we use history".yellow);
@@ -116,7 +107,7 @@ class GetActiveWindow {
 
 
     async getCurrentActiveWindow() {
-        const os_info = this.checkOsConfiguration();
+        const os_info = checkOsConfiguration();
         switch (os_info) {
             case "Linux":
                 return this.getLinuxInfo();

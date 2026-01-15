@@ -3,7 +3,7 @@ const path = require("path");
 const Database = require('better-sqlite3');
 const os = require("os");
 const stringFilter = require("./string_filteration");
-const { extractDomain } = require("./utils");
+const { extractDomain, checkOsConfiguration } = require("./utils");
 class ExtractUrlHistory {
     userDataPath;
     localStatePath;
@@ -175,43 +175,65 @@ class ExtractUrlHistory {
 
     windowReport(activeWindow, browserInformation) {
         return new Promise(async (resolve, reject) => {
-            const currentApplication = activeWindow;
-            if (currentApplication?.owner.path) {
-                let findApplication;
-                const appDataDirectory = path.join(process.env.HOMEDRIVE, "Users", process.env.USERNAME, "AppData");
-                if (os.type() == "Linux") {
-                    let browserPath = browserInformation['platforms']['linux']['userDataPath'];
-                    this.userDataPath = path.join(appDataDirectory, browserPath);
-                    if (fs.existsSync(this.userDataPath)) {
-                        browserPath = browserInformation['platforms']['linux']['userDataPath'];
-                    } else if (browserInformation['platforms']['linux']['snapPath'] && fs.existsSync(path.join(appDataDirectory, browserInformation['platforms']['linux']['snapPath']))) {
-                        browserPath = browserInformation['platforms']['linux']['snapPath'];
+            try {
+                const currentApplication = activeWindow;
+                if (currentApplication?.owner.path) {
+                    let findApplication;
+                    const appDataDirectory = path.join(process.env.HOMEDRIVE, "Users", process.env.USERNAME, "AppData");
+                    const os_info = checkOsConfiguration();
+                    if (os_info == "Linux") {
+                        let browserPath = browserInformation['platforms']['linux']['userDataPath'];
                         this.userDataPath = path.join(appDataDirectory, browserPath);
+                        if (fs.existsSync(this.userDataPath)) {
+                            browserPath = browserInformation['platforms']['linux']['userDataPath'];
+                        } else if (browserInformation['platforms']['linux']['snapPath'] && fs.existsSync(path.join(appDataDirectory, browserInformation['platforms']['linux']['snapPath']))) {
+                            browserPath = browserInformation['platforms']['linux']['snapPath'];
+                            this.userDataPath = path.join(appDataDirectory, browserPath);
+                        }
+                        findApplication = await this.createPathsForLinux(currentApplication, browserInformation);
+                    } else {
+                        let userDataPath = "";
+                        switch (os_info) {
+                            case "win_7":
+                                userDataPath = "userDataPathWin7";
+                                break;
+                            case "win_8":
+                                userDataPath = "userDataPathWin8Plus";
+                                break;
+                            case "win_10":
+                                userDataPath = "userDataPath";
+                                break;
+                            case "win_11":
+                                userDataPath = "userDataPath";
+                                break;
+                        }
+                        let browserPath = browserInformation['platforms']['win32'][userDataPath];
+                        this.userDataPath = path.join(appDataDirectory, browserPath);
+                        this.localStatePath = path.join(this.userDataPath, "Local State");
+                        findApplication = await this.createPaths(currentApplication, browserInformation);
                     }
-                    findApplication = await this.createPathsForLinux(currentApplication, browserInformation);
-                } else {
-                    let browserPath = browserInformation['platforms']['win32']['userDataPath'];
-                    this.userDataPath = path.join(appDataDirectory, browserPath);
-                    this.localStatePath = path.join(this.userDataPath, "Local State");
-                    findApplication = await this.createPaths(currentApplication, browserInformation);
-                }
 
-                console.log("Before removing temp files", this.createdTemPath);
-                if (this.createdTemPath.length > 0) {
-                    for (let path = 0; path < this.createdTemPath.length; path++) {
-                        if (fs.existsSync(this.createdTemPath[path])) {
-                            console.log("Removing temp file", this.createdTemPath[path]);
-                            fs.unlinkSync(this.createdTemPath[path]);
+                    console.log("Before removing temp files", this.createdTemPath);
+                    if (this.createdTemPath.length > 0) {
+                        for (let path = 0; path < this.createdTemPath.length; path++) {
+                            if (fs.existsSync(this.createdTemPath[path])) {
+                                console.log("Removing temp file", this.createdTemPath[path]);
+                                fs.unlinkSync(this.createdTemPath[path]);
+                            }
                         }
                     }
-                }
-                this.createdTemPath = [];
+                    this.createdTemPath = [];
 
-                if (findApplication) {
-                    resolve(findApplication);
-                } else {
-                    resolve(activeWindow);
+                    if (findApplication) {
+                        resolve(findApplication);
+                    } else {
+                        resolve(activeWindow);
+                    }
                 }
+            }
+            catch (error) {
+                console.log("Error while get the window report", error);
+                return activeWindow;
             }
         })
     }
