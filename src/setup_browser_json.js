@@ -10,7 +10,11 @@ class SetupBrowserJSONData {
         const roamingPath = process.env.APPDATA;
         console.log("Browser information shows here", browserData);
         if (platform === 'Windows_NT' || platform === 'Linux') {
-            const filePath = path.join(roamingPath, folderName, "browser_storage", 'browsersInformation.json');
+            let browser_storage_path = path.join(roamingPath, folderName, "browser_storage");
+            if (!fs.existsSync(browser_storage_path)) {
+                fs.mkdirSync(browser_storage_path);
+            }
+            const filePath = path.join(browser_storage_path, 'browsersInformation.json');
             console.log("File path to store", filePath)
             fs.writeFileSync(filePath, JSON.stringify(browserData, null, 2), 'utf-8');
             console.log('browsersInformation.json created with this path', filePath);
