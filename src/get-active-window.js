@@ -8,7 +8,7 @@ const log = console.log;
 
 class GetActiveWindow {
     folderName = "";
-    constructor(folderName) { 
+    constructor(folderName) {
         this.folderName = folderName;
     }
 
@@ -44,7 +44,7 @@ class GetActiveWindow {
                         log(" -- Native exe gets url -- ".cyan, result_from_tool);
                         resolve(active_win);
                     } else {
-                        resolve(this.getDataFromHistory());
+                    resolve(this.getDataFromHistory());
                     }
                 } else {
                     resolve(this.getDataFromHistory());

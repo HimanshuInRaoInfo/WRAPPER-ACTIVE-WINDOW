@@ -3,6 +3,7 @@ const path = require("path");
 const Database = require('better-sqlite3');
 const os = require("os");
 const stringFilter = require("./string_filteration");
+const { parse } = require("ini");
 const { extractDomain, checkOsConfiguration } = require("./utils");
 class ExtractUrlHistory {
     userDataPath;
@@ -21,7 +22,7 @@ class ExtractUrlHistory {
 
                 resolve(rows);
             } catch (err) {
-                console.error('Error reading history:', err);
+                console.error('Error reading history:', err.name);
                 resolve([]);
             }
         });
@@ -31,9 +32,11 @@ class ExtractUrlHistory {
     matchActiveTitleToHistory(history, currentApp, profile) {
         let historyMatches = [];
         for (const h of history) {
-            const stringResult = stringFilter.compareStrings(currentApp.title.trim(), h.title || "", h.url);
-            if (stringResult.isMatch) {
-                historyMatches.push(stringResult);
+            if (h.title && h.url) {
+                const stringResult = stringFilter.compareStrings(currentApp.title.trim(), h.title || "", h.url);
+                if (stringResult.isMatch) {
+                    historyMatches.push(stringResult);
+                }
             }
         }
 
@@ -54,22 +57,62 @@ class ExtractUrlHistory {
 
     createPaths = async (currentApp, browserInformation) => {
         try {
+            const isGlobalHistoryAvailable = path.join(this.userDataPath, browserInformation['platforms']['win32']['historyFile']);
+            const getGlobalHistory = async () => {
+                const randomSixDigit = Math.floor(100000 + Math.random() * 900000);
+                let tempPath = path.join(os.tmpdir(), `${randomSixDigit}.db`);
+                fs.copyFileSync(isGlobalHistoryAvailable, tempPath);
+                let history = await this.readHistory(tempPath, browserInformation.sqlQuery);
+                let result;
+                if (history.length === 0) {
+                    console.log("⚠️ No history found.");
+                } else {
+                    result = await this.matchActiveTitleToHistory(history, currentApp, tempPath);
+                }
+                if (result) {
+                    return result;
+                } else {
+                    return null;
+                }
+            }
+
             if (fs.existsSync(this.localStatePath)) {
-                const raw = fs.readFileSync(this.localStatePath, "utf-8");
-                const localState = JSON.parse(raw);
-                const lastActive = localState?.profile?.last_active_profiles;
-                const lastUsedProfile = localState?.profile?.last_used;
+                let lastActive = [];
+                let lastUsedProfile = "";
                 let results = [];
 
-                const isGlobalHistoryAvailabel = path.join(this.userDataPath, "History");
+                if (browserInformation['platforms']['win32']['historyType'] == 'ini') {
+                    let text = fs.readFileSync(this.localStatePath, {
+                        encoding: 'utf-8'
+                    })
+                    const raw = parse(text);
+                    let profilesInUse = [];
+                    for (const key of Object.keys(raw)) {
+                        if (raw[key].Path) {
+                            profilesInUse.push(raw[key].Path);
+                        }
+                    }
+                    lastActive = profilesInUse;
+                    lastUsedProfile = raw['Profile0'].Path;
+                } else {
+                    let raw = fs.readFileSync(this.localStatePath, browserInformation['platforms']['win32']['historyType']);
+                    let localState = JSON.parse(raw);
+                    lastActive = localState?.profile?.last_active_profiles;
+                    lastUsedProfile = localState?.profile?.last_used;
+                }
 
                 if (Array.isArray(lastActive) && lastActive.length > 0) {
                     // Remove all previous temp files
                     const tempPaths = lastActive.map((profile) => {
                         const tempPath = path.join(os.tmpdir(), `${profile}.db`);
-                        const localStatePath = path.join(this.userDataPath, profile, "History");
-                        fs.copyFileSync(localStatePath, tempPath);
-                        return { tempPath, profile };
+                        const localStatePath = path.join(this.userDataPath, profile, browserInformation['platforms']['win32']['historyFile']);
+                        if (fs.existsSync(localStatePath)) {
+                            fs.mkdirSync(path.dirname(tempPath), { recursive: true });
+                            fs.copyFileSync(localStatePath, tempPath);
+                            return { tempPath, profile };
+                        } else {
+                            return "";
+                        }
                     });
 
                     this.createdTemPath = tempPaths.map(tp => tp.tempPath);
@@ -77,7 +120,7 @@ class ExtractUrlHistory {
                     for (let i = 0; i < tempPaths.length;) {
                         let history = await this.readHistory(tempPaths[i].tempPath, browserInformation.sqlQuery);
                         if (history.length === 0) {
-                            console.log("⚠️ No history found.");
+                            console.log("No history");
                             i++;
                         } else {
                             const result = await this.matchActiveTitleToHistory(history, currentApp, tempPaths[i].profile);
@@ -100,26 +143,13 @@ class ExtractUrlHistory {
                     } else {
                         return null;
                     }
-                } else if (fs.existsSync(isGlobalHistoryAvailabel)) {
-                    let tempPath = path.join(os.tmpdir(), `opera_temp.db`);
-                    fs.copyFileSync(isGlobalHistoryAvailabel, tempPath);
-                    let history = await this.readHistory(tempPath, browserInformation.sqlQuery);
-                    let result;
-                    if (history.length === 0) {
-                        console.log("⚠️ No history found.");                            
-                    } else {
-                        result = await this.matchActiveTitleToHistory(history, currentApp, tempPath);
-                    }
-
-                    if (result) {
-                        return result;
-                    } else {
-                        return null;
-                    }
-
+                } else if (fs.existsSync(isGlobalHistoryAvailable)) {
+                    return getGlobalHistory();
                 } else {
                     return null;
                 }
+            } else if (fs.existsSync(isGlobalHistoryAvailable)) {
+                return getGlobalHistory();
             } else {
                 return null;
             }
@@ -131,7 +161,7 @@ class ExtractUrlHistory {
 
     createPathsForLinux = async (currentProvidedApp, browserInformation) => {
         try {
-            let fileLocations = this.findFilesInDir(this.userDataPath, browserInformation["linux"]["historyFile"]);
+            let fileLocations = this.findFilesInDir(this.userDataPath, browserInformation['platforms']["linux"]["historyFile"]);
             let results = [];
             if (Array.isArray(fileLocations) && fileLocations.length > 0) {
 
@@ -228,17 +258,15 @@ class ExtractUrlHistory {
                                 break;
                         }
                         let browserPath = browserInformation['platforms']['win32'][userDataPath];
-                        console.log("This is browser paths ", appDataDirectory, browserPath);
                         this.userDataPath = path.join(appDataDirectory, browserPath);
-                        this.localStatePath = path.join(this.userDataPath, "Local State");
+                        this.localStatePath = path.join(this.userDataPath, browserInformation['platforms']['win32']["localStateFile"]);
                         findApplication = await this.createPaths(currentApplication, browserInformation);
                     }
 
-                    console.log("Before removing temp files", this.createdTemPath);
                     if (this.createdTemPath.length > 0) {
                         for (let path = 0; path < this.createdTemPath.length; path++) {
                             if (fs.existsSync(this.createdTemPath[path])) {
-                                console.log("Removing temp file", this.createdTemPath[path]);
+                                console.log("Removing temp file".red, this.createdTemPath[path]);
                                 fs.unlinkSync(this.createdTemPath[path]);
                             }
                         }

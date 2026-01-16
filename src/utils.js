@@ -4,14 +4,14 @@ function extractDomain(url) {
     switch (url) {
         case /^file:\/\//i.test(url):
             const path = url.replace(/^file:\/\//i, '').replace(/^\/+/, '');
-            console.log("---------------- FILE URL FROM HISTORY DETECTS ---------------- \n", this.buildFileRoot(path))
+            console.log("---------------- FILE URL FROM HISTORY DETECTS ---------------- ", this.buildFileRoot(path))
             return buildFileRoot(path);
         case /^[a-zA-Z]:[\\/]/.test(url):
-            console.log("---------------- LOCAL PATH FROM HISTORY DETECTS ---------------- \n", this.buildFileRoot(url))
+            console.log("---------------- LOCAL PATH FROM HISTORY DETECTS ---------------- ", this.buildFileRoot(url))
             return buildFileRoot(url);
         default:
             const urlObj = new URL(url);
-            console.log("---------------- RETURNS URL FROM HISTORY MATCHES ---------------- \n", urlObj.origin)
+            console.log("---------------- RETURNS URL FROM HISTORY MATCHES ---------------- ", urlObj.origin)
             return urlObj.origin;
     }
 }

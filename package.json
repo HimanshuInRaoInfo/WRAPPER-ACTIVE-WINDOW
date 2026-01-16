@@ -25,6 +25,7 @@
   "dependencies": {
     "active-win": "^8.1.0",
     "better-sqlite3": "^11.8.1",
-    "colors": "^1.4.0"
+    "colors": "^1.4.0",
+    "ini": "^6.0.0"
   }
 }

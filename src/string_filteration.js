@@ -27,7 +27,7 @@ function pickBestRecord(records) {
         .sort((a, b) => b.finalScore - a.finalScore)[0];
 }
 
-function compareStrings(inputString, optionString, url, threshold = 0.350) {
+function compareStrings(inputString, optionString, url, threshold = 0.350) {    
     if (!inputString || !optionString) {
         return {
             isMatch: false,
