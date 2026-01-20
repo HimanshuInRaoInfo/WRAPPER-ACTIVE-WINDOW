@@ -16,7 +16,7 @@ class GetActiveWindow {
         return new Promise(async (res, rej) => {
             const extract_url_history = new GetCurrentApplicationInfo();
             const active_win = this.getActiveWin();
-            const browserInformationJSON = new SetupBrowserJSONData().getFileData(this.folderName);
+            const browserInformationJSON = new SetupBrowserJSONData().getFileData(this.folderName);            
             if (browserInformationJSON) {
                 if (active_win) {
                     let result = await extract_url_history.getCurrentApplicationInfo(active_win, browserInformationJSON);
@@ -37,15 +37,15 @@ class GetActiveWindow {
         return new Promise(async (resolve, reject) => {
             if (active_win.owner && active_win.owner.path) {
                 if (active_win.owner.processId) {
-                    // const result_from_tool = await activeWinExe(active_win.owner.processId);
-                    // if (result_from_tool) {
-                    //     active_win['url'] = result_from_tool;
-                    //     active_win['isBrowser'] = true;
-                    //     log(" -- Native exe gets url -- ".cyan, result_from_tool);
-                    //     resolve(active_win);
-                    // } else {
-                    resolve(this.getDataFromHistory());
-                    // }
+                    const result_from_tool = await activeWinExe(active_win.owner.processId);
+                    if (result_from_tool) {
+                        active_win['url'] = result_from_tool;
+                        active_win['isBrowser'] = true;
+                        log(" -- Native exe gets url -- ".cyan, result_from_tool);
+                        resolve(active_win);
+                    } else {
+                        resolve(this.getDataFromHistory());
+                    }
                 } else {
                     resolve(this.getDataFromHistory());
                 }
