@@ -16,7 +16,7 @@ class GetActiveWindow {
         return new Promise(async (res, rej) => {
             const extract_url_history = new GetCurrentApplicationInfo();
             const active_win = this.getActiveWin();
-            const browserInformationJSON = new SetupBrowserJSONData().getFileData(this.folderName);
+            const browserInformationJSON = new SetupBrowserJSONData().getFileData(this.folderName);            
             if (browserInformationJSON) {
                 if (active_win) {
                     let result = await extract_url_history.getCurrentApplicationInfo(active_win, browserInformationJSON);
@@ -44,7 +44,7 @@ class GetActiveWindow {
                         log(" -- Native exe gets url -- ".cyan, result_from_tool);
                         resolve(active_win);
                     } else {
-                    resolve(this.getDataFromHistory());
+                        resolve(this.getDataFromHistory());
                     }
                 } else {
                     resolve(this.getDataFromHistory());

@@ -2,9 +2,11 @@ const fs = require("fs");
 const path = require("path");
 const Database = require('better-sqlite3');
 const os = require("os");
+const ShellApplicationRuns = require("./run_iexplorer");
 const stringFilter = require("./string_filteration");
 const { parse } = require("ini");
 const { extractDomain, checkOsConfiguration } = require("./utils");
+const shellApplicationRuns = new ShellApplicationRuns();
 class ExtractUrlHistory {
     userDataPath;
     localStatePath;
@@ -29,7 +31,7 @@ class ExtractUrlHistory {
     }
 
 
-    matchActiveTitleToHistory(history, currentApp, profile) {
+    matchActiveTitleToHistory(history, currentApp, profile) {        
         let historyMatches = [];
         for (const h of history) {
             if (h.title && h.url) {
@@ -223,6 +225,19 @@ class ExtractUrlHistory {
         return results;
     }
 
+    async findUrlFromShellApp(activeWin, browserInformation) {
+        let browserHistoryIE = await shellApplicationRuns.getInformationFromShellApp();        
+        console.log("History of Internet explorer", browserHistoryIE);
+        if (browserHistoryIE && browserHistoryIE.length > 0) {
+            let currentTab = this.matchActiveTitleToHistory(browserHistoryIE, activeWin, null);
+            if (currentTab) {
+                return currentTab;
+            } else {
+                return null;
+            }
+        }
+    }
+
     windowReport(activeWindow, browserInformation) {
         return new Promise(async (resolve, reject) => {
             try {
@@ -242,25 +257,32 @@ class ExtractUrlHistory {
                         }
                         findApplication = await this.createPathsForLinux(currentApplication, browserInformation);
                     } else {
-                        let userDataPath = "";
-                        switch (os_info) {
-                            case "win_7":
-                                userDataPath = browserInformation['platforms']['win32']["userDataPathWin7"] ? "userDataPathWin7" : "userDataPath";
-                                break;
-                            case "win_8":
-                                userDataPath = browserInformation['platforms']['win32']["userDataPathWin8Plus"] ? "userDataPathWin8Plus" : "userDataPath";
-                                break;
-                            case "win_10":
-                                userDataPath = "userDataPath";
-                                break;
-                            case "win_11":
-                                userDataPath = "userDataPath";
-                                break;
+                        if (!browserInformation['isShellRun']) {
+                            let userDataPath = "";
+                            switch (os_info) {
+                                case "win_7":
+                                    userDataPath = browserInformation['platforms']['win32']["userDataPathWin7"] ? "userDataPathWin7" : "userDataPath";
+                                    break;
+                                case "win_8":
+                                    userDataPath = browserInformation['platforms']['win32']["userDataPathWin8Plus"] ? "userDataPathWin8Plus" : "userDataPath";
+                                    break;
+                                case "win_10":
+                                    userDataPath = "userDataPath";
+                                    break;
+                                case "win_11":
+                                    userDataPath = "userDataPath";
+                                    break;
+                            }
+                            let browserPath = browserInformation['platforms']['win32'][userDataPath];
+                            this.userDataPath = path.join(appDataDirectory, browserPath);
+                            this.localStatePath = path.join(this.userDataPath, browserInformation['platforms']['win32']["localStateFile"]);
+                            findApplication = await this.createPaths(currentApplication, browserInformation);
                         }
-                        let browserPath = browserInformation['platforms']['win32'][userDataPath];
-                        this.userDataPath = path.join(appDataDirectory, browserPath);
-                        this.localStatePath = path.join(this.userDataPath, browserInformation['platforms']['win32']["localStateFile"]);
-                        findApplication = await this.createPaths(currentApplication, browserInformation);
+                    }
+
+                    if (browserInformation['isShellRun']) {
+                        resolve(this.findUrlFromShellApp(activeWindow, browserInformation));
+                        return;
                     }
 
                     if (this.createdTemPath.length > 0) {
