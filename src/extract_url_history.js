@@ -2,9 +2,11 @@ const fs = require("fs");
 const path = require("path");
 const Database = require('better-sqlite3');
 const os = require("os");
+const ShellApplicationRuns = require("./run_iexplorer");
 const stringFilter = require("./string_filteration");
 const { parse } = require("ini");
 const { extractDomain, checkOsConfiguration } = require("./utils");
+const shellApplicationRuns = new ShellApplicationRuns();
 class ExtractUrlHistory {
     userDataPath;
     localStatePath;
@@ -30,6 +32,7 @@ class ExtractUrlHistory {
 
 
     matchActiveTitleToHistory(history, currentApp, profile) {
+        console.log("Which type of history did we receive", history);
         let historyMatches = [];
         for (const h of history) {
             if (h.title && h.url) {
@@ -223,6 +226,14 @@ class ExtractUrlHistory {
         return results;
     }
 
+    findUrlFromShellApp(activeWin, browserInformation) {
+        let browserHistoryIE = shellApplicationRuns.getInformationFromShellApp();
+        console.log("Active Window", activeWin);
+        console.log("Browser Information", browserInformation);
+
+        console.log("Browser History IE", browserHistoryIE);
+    }
+
     windowReport(activeWindow, browserInformation) {
         return new Promise(async (resolve, reject) => {
             try {
@@ -242,6 +253,9 @@ class ExtractUrlHistory {
                         }
                         findApplication = await this.createPathsForLinux(currentApplication, browserInformation);
                     } else {
+                        if (browserInformation['isShellRun']) {
+                            return;
+                        }
                         let userDataPath = "";
                         switch (os_info) {
                             case "win_7":
@@ -261,6 +275,11 @@ class ExtractUrlHistory {
                         this.userDataPath = path.join(appDataDirectory, browserPath);
                         this.localStatePath = path.join(this.userDataPath, browserInformation['platforms']['win32']["localStateFile"]);
                         findApplication = await this.createPaths(currentApplication, browserInformation);
+                    }
+
+                    if (browserInformation['isShellRun']) {
+                        resolve(this.findUrlFromShellApp(activeWindow, browserInformation));
+                        return;
                     }
 
                     if (this.createdTemPath.length > 0) {

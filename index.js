@@ -16,12 +16,12 @@ const setUpJsonBrowserFile = async (browserData, folderName) => {
 
 // For testing uncomment the following code and comment the code below it
 
-setInterval(() => { 
-    console.log("\n\n")
-    getActiveWindow("Supersee").then(result => {
-        // console.log("result", result);
-    });
-}, 5000);
+// setInterval(() => {
+//     console.log("\n\n")
+//     getActiveWindow("Supersee").then(result => {
+//         // console.log("result", result);
+//     });
+// }, 5000);
 
 module.exports = {
     getActiveWindow,

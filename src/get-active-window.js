@@ -37,15 +37,15 @@ class GetActiveWindow {
         return new Promise(async (resolve, reject) => {
             if (active_win.owner && active_win.owner.path) {
                 if (active_win.owner.processId) {
-                    const result_from_tool = await activeWinExe(active_win.owner.processId);
-                    if (result_from_tool) {
-                        active_win['url'] = result_from_tool;
-                        active_win['isBrowser'] = true;
-                        log(" -- Native exe gets url -- ".cyan, result_from_tool);
-                        resolve(active_win);
-                    } else {
+                    // const result_from_tool = await activeWinExe(active_win.owner.processId);
+                    // if (result_from_tool) {
+                    //     active_win['url'] = result_from_tool;
+                    //     active_win['isBrowser'] = true;
+                    //     log(" -- Native exe gets url -- ".cyan, result_from_tool);
+                    //     resolve(active_win);
+                    // } else {
                     resolve(this.getDataFromHistory());
-                    }
+                    // }
                 } else {
                     resolve(this.getDataFromHistory());
                 }
