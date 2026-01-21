@@ -227,7 +227,6 @@ class ExtractUrlHistory {
 
     async findUrlFromShellApp(activeWin, browserInformation) {
         let browserHistoryIE = await shellApplicationRuns.getInformationFromShellApp();        
-        console.log("History of Internet explorer", browserHistoryIE);
         if (browserHistoryIE && browserHistoryIE.length > 0) {
             let currentTab = this.matchActiveTitleToHistory(browserHistoryIE, activeWin, null);
             if (currentTab) {

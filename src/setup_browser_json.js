@@ -30,7 +30,7 @@ class SetupBrowserJSONData {
             let result = fs.readFileSync(filePath, 'utf8');
             return JSON.parse(result);
         } catch (err) {
-            console.log("Error handle when read file", err)
+            console.log("Error handle when read browser json file")
             return null;
         }
     }
