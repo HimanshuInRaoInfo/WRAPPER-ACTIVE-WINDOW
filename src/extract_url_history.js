@@ -16,6 +16,11 @@ class ExtractUrlHistory {
     readHistory(tempPath, query) { // this will read history from browsers db files...
         return new Promise((resolve) => {
             try {
+                if (!tempPath || !fs.existsSync(tempPath)) {
+                    console.error('History DB not found:', tempPath);
+                    return resolve([]);
+                }
+
                 const db = new Database(tempPath, { readonly: true });
 
                 const stmt = db.prepare(query);
@@ -31,7 +36,7 @@ class ExtractUrlHistory {
     }
 
 
-    matchActiveTitleToHistory(history, currentApp, profile) {        
+    matchActiveTitleToHistory(history, currentApp, profile) {
         let historyMatches = [];
         for (const h of history) {
             if (h.title && h.url) {
@@ -60,6 +65,8 @@ class ExtractUrlHistory {
     createPaths = async (currentApp, browserInformation) => {
         try {
             const isGlobalHistoryAvailable = path.join(this.userDataPath, browserInformation['platforms']['win32']['historyFile']);
+
+            // Here is the function for getting global history
             const getGlobalHistory = async () => {
                 const randomSixDigit = Math.floor(100000 + Math.random() * 900000);
                 let tempPath = path.join(os.tmpdir(), `${randomSixDigit}.db`);
@@ -102,31 +109,59 @@ class ExtractUrlHistory {
                     lastActive = localState?.profile?.last_active_profiles;
                     lastUsedProfile = localState?.profile?.last_used;
                 }
-
                 if (Array.isArray(lastActive) && lastActive.length > 0) {
-                    // Remove all previous temp files
-                    const tempPaths = lastActive.map((profile) => {
-                        const tempPath = path.join(os.tmpdir(), `${profile}.db`);
-                        const localStatePath = path.join(this.userDataPath, profile, browserInformation['platforms']['win32']['historyFile']);
-                        if (fs.existsSync(localStatePath)) {
+                    const tempPathBackupDB = async () => {
+                        let tempPaths = [];
+                        let checkIsTakeDbBackUp = browserInformation['platforms']['win32']['historyFile'].toLowerCase().includes('.sqlite') ? true : false;
+                        for (let i = 0; i < lastActive.length; i++) {
+                            const profile = lastActive[i];
+                            const tempPath = path.join(os.tmpdir(), `${profile}.db`);
+                            const filePaths = this.findMatchingFiles(
+                                path.join(this.userDataPath, profile),
+                                browserInformation['platforms']['win32']['historyFile']
+                            );
+                            if (filePaths.length === 0) continue;
+                            const localStatePath = filePaths[0];
+                            if (!fs.existsSync(localStatePath)) continue;
                             fs.mkdirSync(path.dirname(tempPath), { recursive: true });
-                            fs.copyFileSync(localStatePath, tempPath);
-                            return { tempPath, profile };
-                        } else {
-                            return "";
+
+                            if (checkIsTakeDbBackUp) {
+                                try {
+                                    const sourceDB = new Database(localStatePath, {
+                                        readonly: true,
+                                        fileMustExist: true
+                                    });
+                                    await sourceDB.backup(tempPath);
+                                    sourceDB.close();
+                                    tempPaths.push({ tempPath, profile });
+                                    console.log("Backup completed safely");
+                                } catch (err) {
+                                    console.error("Backup failed:", err);
+                                }
+                            } else {
+                                fs.copyFileSync(localStatePath, tempPath);
+                                tempPaths.push({ tempPath, profile });
+                            }
                         }
-                    });
 
+                        return tempPaths;
+                    };
+                    let tempPaths = await tempPathBackupDB();
                     this.createdTemPath = tempPaths.map(tp => tp.tempPath);
-
                     for (let i = 0; i < tempPaths.length;) {
-                        let history = await this.readHistory(tempPaths[i].tempPath, browserInformation.sqlQuery);
-                        if (history.length === 0) {
-                            console.log("No history");
-                            i++;
+                        if (tempPaths[i].tempPath) {
+                            console.log("Temp Paths", tempPaths[i].tempPath)
+                            let history = await this.readHistory(tempPaths[i].tempPath, browserInformation.sqlQuery);
+                            // console.log(history)
+                            if (history.length === 0) {
+                                console.log("No history");
+                                i++;
+                            } else {
+                                const result = await this.matchActiveTitleToHistory(history, currentApp, tempPaths[i].profile);
+                                results.push(result);
+                                i++;
+                            }
                         } else {
-                            const result = await this.matchActiveTitleToHistory(history, currentApp, tempPaths[i].profile);
-                            results.push(result);
                             i++;
                         }
                     }
@@ -145,6 +180,8 @@ class ExtractUrlHistory {
                     } else {
                         return null;
                     }
+
+
                 } else if (fs.existsSync(isGlobalHistoryAvailable)) {
                     return getGlobalHistory();
                 } else {
@@ -226,7 +263,9 @@ class ExtractUrlHistory {
     }
 
     async findUrlFromShellApp(activeWin, browserInformation) {
-        let browserHistoryIE = await shellApplicationRuns.getInformationFromShellApp();        
+        console.log("\n\nBrowsr info", browserInformation);
+        let browserHistoryIE = await shellApplicationRuns.getInformationFromShellApp();
+        console.log("\n\nHistory of Internet explorer", browserHistoryIE);
         if (browserHistoryIE && browserHistoryIE.length > 0) {
             let currentTab = this.matchActiveTitleToHistory(browserHistoryIE, activeWin, null);
             if (currentTab) {
@@ -306,6 +345,19 @@ class ExtractUrlHistory {
                 return activeWindow;
             }
         })
+    }
+
+    findMatchingFiles(dirPath, baseFileName) {
+        if (!fs.existsSync(dirPath)) return [];
+
+        const files = fs.readdirSync(dirPath);
+
+        const matchedFiles = files.filter(file =>
+            file === baseFileName || file.startsWith(baseFileName + ".")
+        );
+
+        // return full paths (recommended)
+        return matchedFiles.map(file => path.join(dirPath, file));
     }
 }
 
