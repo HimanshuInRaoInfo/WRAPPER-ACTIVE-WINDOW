@@ -29,7 +29,7 @@ class ExtractUrlHistory {
 
                 resolve(rows);
             } catch (err) {
-                console.error('Error reading history:', err.name);
+                console.error('Error reading history:', err);
                 resolve([]);
             }
         });
@@ -281,19 +281,25 @@ class ExtractUrlHistory {
             try {
                 const currentApplication = activeWindow;
                 if (currentApplication?.owner.path) {
+                    if (!browserInformation) {
+                        return activeWindow;
+                    }
                     let findApplication;
-                    const appDataDirectory = path.join(process.env.HOMEDRIVE, "Users", process.env.USERNAME, "AppData");
+                    const appDataDirectory = this.getAppDataDirectory();
                     const os_info = checkOsConfiguration();
                     if (os_info == "Linux") {
-                        let browserPath = browserInformation['platforms']['linux']['userDataPath'];
-                        this.userDataPath = path.join(appDataDirectory, browserPath);
+                        let userDataPathBrowserInformation = browserInformation['platforms']['linux']['userDataPath'];
+                        this.userDataPath = path.join(appDataDirectory, ".config", userDataPathBrowserInformation);
+                        let snapPathBrowserInformation = browserInformation['platforms']['linux']['snapPath'];
+                        let browserPath;
                         if (fs.existsSync(this.userDataPath)) {
-                            browserPath = browserInformation['platforms']['linux']['userDataPath'];
-                        } else if (browserInformation['platforms']['linux']['snapPath'] && fs.existsSync(path.join(appDataDirectory, browserInformation['platforms']['linux']['snapPath']))) {
-                            browserPath = browserInformation['platforms']['linux']['snapPath'];
-                            this.userDataPath = path.join(appDataDirectory, browserPath);
+                            browserPath = this.userDataPath;
+                        } else if (snapPathBrowserInformation && fs.existsSync(path.join(appDataDirectory, snapPathBrowserInformation))) {
+                            browserPath = snapPathBrowserInformation;
+                            this.userDataPath = path.join(appDataDirectory, snapPathBrowserInformation)
                         }
-                        findApplication = await this.createPathsForLinux(currentApplication, browserInformation);
+                        this.localStatePath = path.join(this.userDataPath, browserInformation['platforms']['win32']["localStateFile"]);
+                        findApplication = await this.createPaths(currentApplication, browserInformation);
                     } else {
                         if (!browserInformation['isShellRun']) {
                             let userDataPath = "";
@@ -346,6 +352,22 @@ class ExtractUrlHistory {
             }
         })
     }
+
+    getAppDataDirectory() {
+        const home = os.homedir();
+
+        if (process.platform === "win32") {
+            return path.join(home, "AppData");
+        }
+
+        if (process.platform === "darwin") {
+            return path.join(home, "Library", "Application Support");
+        }
+
+        // Linux
+        return process.env.XDG_CONFIG_HOME || path.join(home);
+    }
+
 
     findMatchingFiles(dirPath, baseFileName) {
         if (!fs.existsSync(dirPath)) return [];
