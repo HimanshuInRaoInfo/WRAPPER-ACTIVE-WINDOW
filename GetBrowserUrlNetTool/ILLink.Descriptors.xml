@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <!-- ===================================================================== -->
+  <!-- CRITICAL: Preserve ALL UI Automation assemblies and types            -->
+  <!-- These are accessed dynamically at runtime and must not be trimmed    -->
+  <!-- ===================================================================== -->
+  
+  <!-- Core UI Automation assemblies - preserve EVERYTHING -->
+  <assembly fullname="UIAutomationClient" preserve="all" />
+  <assembly fullname="UIAutomationTypes" preserve="all" />
+  <assembly fullname="UIAutomationProvider" preserve="all" />
+  <assembly fullname="WindowsBase" preserve="all" />
+  <assembly fullname="Accessibility" preserve="all" />
+  
+  <!-- Preserve our application assembly completely -->
+  <assembly fullname="GetBrowserUrlNetTool" preserve="all" />
+  
+  <!-- Preserve all System.Windows.Automation namespace types -->
+  <type fullname="System.Windows.Automation.ValuePattern" preserve="all" />
+  <type fullname="System.Windows.Automation.TextPattern" preserve="all" />
+  <type fullname="System.Windows.Automation.AutomationElement" preserve="all" />
+  <type fullname="System.Windows.Automation.PropertyCondition" preserve="all" />
+  <type fullname="System.Windows.Automation.Condition" preserve="all" />
+  <type fullname="System.Windows.Automation.ControlType" preserve="all" />
+  <type fullname="System.Windows.Automation.TreeScope" preserve="all" />
+  <type fullname="System.Windows.Automation.AndCondition" preserve="all" />
+  <type fullname="System.Windows.Automation.OrCondition" preserve="all" />
+  <type fullname="System.Windows.Automation.NotCondition" preserve="all" />
+</linker>

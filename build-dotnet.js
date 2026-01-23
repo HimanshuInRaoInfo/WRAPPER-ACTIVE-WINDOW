@@ -14,29 +14,54 @@ if (!fs.existsSync(projectDir)) {
   process.exit(1);
 }
 
+// Final optimization: Maximum safe settings (no trimming/AOT due to UI Automation)
 const publishCmd = [
   "dotnet publish",
   "-c Release",
   "-r win-x64",
   "--self-contained true",
   "-p:PublishSingleFile=true",
+  "-p:PublishTrimmed=false",  // UI Automation incompatible
+  "-p:PublishAot=false",      // UI Automation incompatible
   "-p:IncludeAllContentForSelfExtract=true",
-  "-p:TrimMode=partial",
   "-p:EnableCompressionInSingleFile=true",
-  "-p:ReadyToRun=false",
+  "-p:DebugType=none",
+  "-p:DebugSymbols=false",
+  "-p:PublishReadyToRun=false",
+  "-p:InvariantGlobalization=true",
+  "-p:EventSourceSupport=false",
+  "-p:HttpActivityPropagationSupport=false",
+  "-p:MetadataUpdaterSupport=false",
+  "-p:UseSystemResourceKeys=true",
+  "-p:StackTraceSupport=false",
+  "-p:EnableUnsafeBinaryFormatterSerialization=false",
+  "-p:TieredCompilation=false",
+  "-p:OptimizationPreference=Size",
   "-o ./dist"
 ].join(" ");
 
 const checkIsExeAvailable = () => {
   const source_fold_dest = path.join(__dirname, "native");
-  const source_exe_dest = path.join(source_fold_dest, "GetBrowserUrlNetTool.exe")
-  const build_source_path = path.join(__dirname, "GetBrowserUrlNetTool", "dist", "GetBrowserUrlNetTool.exe")
+  const source_exe_dest = path.join(source_fold_dest, "GetBrowserUrlNetTool.exe");
+  const build_source_path = path.join(__dirname, "GetBrowserUrlNetTool", "dist", "GetBrowserUrlNetTool.exe");
 
-  if (!fs.existsSync(source_exe_dest)) {
-    fs.mkdirSync(source_fold_dest, { recursive: true });
-    fs.renameSync(build_source_path, source_exe_dest)
-    return;
+  if (!fs.existsSync(build_source_path)) {
+    console.error("❌ Build failed: executable not found");
+    process.exit(1);
   }
+
+  const stats = fs.statSync(build_source_path);
+  const sizeMB = (stats.size / (1024 * 1024)).toFixed(2);
+  console.log(`\n📦 Build size: ${sizeMB} MB`);
+
+  fs.mkdirSync(source_fold_dest, { recursive: true });
+  
+  if (fs.existsSync(source_exe_dest)) {
+    fs.unlinkSync(source_exe_dest);
+  }
+  
+  fs.renameSync(build_source_path, source_exe_dest);
+  console.log(`✅ Moved to: native/GetBrowserUrlNetTool.exe`);
 }
 
 try {

@@ -1,59 +1,47 @@
-const os = require("os");
 const activeWin = require("active-win");
-const ExtractUrlHistory = require("./extract_url_history");
+const SetupBrowserJSONData = require("./setup_browser_json");
+const GetCurrentApplicationInfo = require("./get_current_appinfo");
+const { checkApplicationBrowser, checkOsConfiguration } = require("./utils");
 const activeWinExe = require("./get-url-from-exe");
+const colors = require("colors");
+const log = console.log;
 
 class GetActiveWindow {
-    constructor(params = null) { }
-
-    checkOsConfiguration() {
-        const os_type = os.type();
-        if (os_type == "Windows_NT") {
-            const release = os.release(); // "10.0.22631"
-            const [major, minor, build] = release.split('.').map(Number);
-            if (major === 6 && minor === 1) return 'win_7';
-            if (major === 6 && minor === 2) return 'win_8';
-            if (major === 6 && minor === 3) return 'win_8';
-            if (major === 10) {
-                if (build >= 22000) {
-                    return 'win_11';
-                }
-                return 'win_10';
-            }
-        }
-        return os_type;
+    folderName = "";
+    constructor(folderName) {
+        this.folderName = folderName;
     }
 
     getDataFromHistory() {
         return new Promise(async (res, rej) => {
-            const extract_url_history = new ExtractUrlHistory();
+            const extract_url_history = new GetCurrentApplicationInfo();
             const active_win = this.getActiveWin();
-            if (active_win) {
-                let result = await extract_url_history.windowReport(active_win);
-                if (result) {
-                    res(result);
-                } else {
-                    res(active_win);
+            const browserInformationJSON = new SetupBrowserJSONData().getFileData(this.folderName);
+            if (browserInformationJSON) {
+                if (active_win) {
+                    let result = await extract_url_history.getCurrentApplicationInfo(active_win, browserInformationJSON);
+                    if (result) {
+                        log(" -- History gets url -- ".green, result);
+                        res(result);
+                    } else {
+                        res(active_win);
+                    }
                 }
+            } else {
+                res(active_win);
             }
         })
     }
 
-    getDataFromNetTool() {
+    getDataFromNetTool(active_win) {
         return new Promise(async (resolve, reject) => {
-            let active_win = this.getActiveWin();
-            if (!active_win) { resolve(null) }
             if (active_win.owner && active_win.owner.path) {
-                const is_browser = this.checkApplicationBrowser(active_win.owner.path);
-                if (!is_browser) {
-                    resolve(active_win)
-                    return;
-                };
-
                 if (active_win.owner.processId) {
                     const result_from_tool = await activeWinExe(active_win.owner.processId);
                     if (result_from_tool) {
                         active_win['url'] = result_from_tool;
+                        active_win['isBrowser'] = true;
+                        log(" -- Native exe gets url -- ".cyan, result_from_tool);
                         resolve(active_win);
                     } else {
                         resolve(this.getDataFromHistory());
@@ -68,18 +56,37 @@ class GetActiveWindow {
     }
 
     getWindowsInfo(win_type) {
+        let browserData = new SetupBrowserJSONData().getFileData(this.folderName);
+        let active_win = this.getActiveWin();
+        if (!active_win) { return null }
+        // Checking if browser data is available or not
+        if (browserData && browserData['browsers']) {
+            const is_browser = checkApplicationBrowser(active_win?.owner.name, browserData); // application is browser or not
+            log("Is application is browser".blue, is_browser);
+            log("\n\n");
+            if (!is_browser) {
+                return active_win
+            };
+        } else {
+            return active_win;
+        }
+
         switch (win_type) {
             case "win_7":
+                log("System is windows 7 we use history".yellow);
                 return this.getDataFromHistory();
                 break;
             case "win_8":
+                log("System is windows 8 we use history".yellow);
                 return this.getDataFromHistory();
                 break;
             case "win_11":
-                return this.getDataFromNetTool();
+                log("System is windows 11 we use native exe".yellow);
+                return this.getDataFromNetTool(active_win);
                 break;
             case "win_10":
-                return this.getDataFromNetTool();
+                log("System is windows 10 we use native exe".yellow);
+                return this.getDataFromNetTool(active_win);
                 break;
         }
     }
@@ -98,32 +105,9 @@ class GetActiveWindow {
         return active_win;
     }
 
-    checkApplicationBrowser(path) {
-        if (path.toLowerCase().includes("chrome")) {
-            return true;
-        } else if (path.toLowerCase().includes("edge") || path.toLowerCase().includes("msedge")) {
-            return true;
-        } else if (path.toLowerCase().includes("brave")) {
-            return true;
-        } else if (path.toLowerCase().includes("vivaldi")) {
-            return true;
-        } else if (path.toLowerCase().includes("seamonkey")) {
-            return true;
-        } else if (path.toLowerCase().includes("torch")) {
-            return true;
-        } else if (path.toLowerCase().includes("opera")) {
-            return true;
-        } else if (path.toLowerCase().includes("firefox")) {
-            return true;
-        } else if (path.toLowerCase().includes("avast")) {
-            return true;
-        } else {
-            return false;
-        }
-    }
 
     async getCurrentActiveWindow() {
-        const os_info = this.checkOsConfiguration();
+        const os_info = checkOsConfiguration();
         switch (os_info) {
             case "Linux":
                 return this.getLinuxInfo();
