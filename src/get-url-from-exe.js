@@ -72,13 +72,13 @@ function resolveAddressBarInput(raw) {
     /* ---------------- FILE URL ---------------- */
     if (/^file:\/\//i.test(value)) {
         const path = value.replace(/^file:\/\//i, '').replace(/^\/+/, '');
-        console.log("---------------- FILE URL ----------------", buildFileRoot(path));
+        console.log("---------------- FILE URL ----------------");
         return buildFileRoot(path);
     }
 
     /* ---------------- LOCAL PATH ---------------- */
     if (/^[a-zA-Z]:[\\/]/.test(value)) {
-        console.log("---------------- LOCAL PATH ----------------", buildFileRoot(path));
+        console.log("---------------- LOCAL PATH ----------------");
         return buildFileRoot(value);
     }
 
@@ -123,22 +123,23 @@ function resolveAddressBarInput(raw) {
 }
 
 function buildFileRoot(path) {
-    if (!path) return null;
-
-    const normalized = path.replace(/\\/g, '/');
-
-    // ✅ CASE 1: Drive root only (C:/)
-    const driveOnly = normalized.match(/^([a-zA-Z]:)\/?$/);
-    if (driveOnly) {
-        return `file://${driveOnly[1]}/`;
+    try {
+        if (!path) return null;
+        const normalized = path.replace(/\\/g, '/');
+        // ✅ CASE 1: Drive root only (C:/)
+        const driveOnly = normalized.match(/^([a-zA-Z]:)\/?$/);
+        if (driveOnly) {
+            return `file://${driveOnly[1]}/`;
+        }
+        // ✅ CASE 2: Drive + first folder (C:/Users/...)
+        const match = normalized.match(/^([a-zA-Z]:)\/([^/]+)/);
+        if (!match) return null;
+        const drive = match[1];
+        const firstFolder = match[2];
+        return `file://${drive}/${firstFolder}/`;
     }
-
-    // ✅ CASE 2: Drive + first folder (C:/Users/...)
-    const match = normalized.match(/^([a-zA-Z]:)\/([^/]+)/);
-    if (!match) return null;
-
-    const drive = match[1];
-    const firstFolder = match[2];
-
-    return `file://${drive}/${firstFolder}/`;
+    catch (err) {
+        console.log("Error while getting file route", err)
+        return null;
+    }
 }
